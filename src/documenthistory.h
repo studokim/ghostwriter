@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- * Copyright (C) 2014-2020 wereturtle
+ * Copyright (C) 2014-2021 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 namespace ghostwriter
 {
+
 /**
  * This class stores and retrieves recent file history using QSettings.
  * It is reentrant, and different instances can be used from anywhere to
@@ -35,6 +36,38 @@ namespace ghostwriter
 class DocumentHistory
 {
 public:
+    /*
+    * Encapsulates the file path/cursor position as a pair.
+    */
+    class RecentFile
+    {
+    public:
+        /**
+         * Returns the file path of the document.
+         */
+        QString filePath;
+
+        /**
+         * The last-known cursor position for the given file path.  Value
+         * will be set to 0 (beginning of the file) if the last cursor position
+         * is unknown.
+         */
+        int position;
+
+        /**
+         * True if the document is new/untitled and therefore
+         * cached to a temporary file location specified by filePath().
+         */
+        bool untitled;
+
+        inline bool operator==(const RecentFile &other)
+        {
+            return (other.filePath == filePath);
+        }
+    };
+
+    typedef QList<RecentFile> RecentFilesList;
+
     /**
      * Constructor.
      */
@@ -49,19 +82,14 @@ public:
      * Returns the list of recent files, up to the maximum number specified.
      * Specify a value of -1 to get the entire history.
      */
-    QStringList recentFiles(int max = -1);
+    RecentFilesList recentFiles(int max = -1);
 
     /**
      * Adds the given file path and cursor position to the history.
      */
-    void add(const QString &filePath, int cursorPosition);
-
-    /**
-     * Gets the last-known cursor position for the given file path.  This
-     * will return 0 (beginning of the file) if the last cursor position
-     * is unknown.
-     */
-    int cursorPosition(const QString &filePath);
+    void add(const QString &filePath,
+        int cursorPosition,
+        bool untitled = false);
 
     /**
      * Wipes the document history clean.

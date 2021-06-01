@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- * Copyright (C) 2014-2020 wereturtle
+ * Copyright (C) 2014-2021 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,30 +29,16 @@
 #define FILE_HISTORY_KEY "FileHistory"
 #define FILE_PATH_KEY "filePath"
 #define CURSOR_POSITION_KEY "cursorPosition"
+#define UNTITLED_KEY "untitled"
 
 namespace ghostwriter
 {
-/*
-* Encapsulates the file path/cursor position as a pair.
-*/
-class RecentFile
-{
-public:
-    QString filePath;
-    int position;
 
-    inline bool operator==(const RecentFile &other)
-    {
-        return (other.filePath == filePath);
-    }
-};
+static void
+storeToSettings(const DocumentHistory::RecentFilesList &recentFiles);
 
-typedef QList<RecentFile> RecentFilesList;
-
-RecentFilesList loadFromSettings(int max = -1);
-void storeToSettings(const RecentFilesList &recentFiles);
-void cleanUpHistory(RecentFilesList &recentFiles);
-
+static void
+cleanUpHistory(DocumentHistory::RecentFilesList &recentFiles);
 
 DocumentHistory::DocumentHistory()
 {
@@ -64,16 +50,40 @@ DocumentHistory::~DocumentHistory()
     ;
 }
 
-QStringList DocumentHistory::recentFiles(int max)
+DocumentHistory::RecentFilesList
+DocumentHistory::recentFiles(int max)
 {
-    RecentFilesList recentFiles = loadFromSettings(max);
-    QStringList filePathList;
+    QSettings settings;
+    int size = settings.beginReadArray(FILE_HISTORY_KEY);
 
-    for (int i = 0; i < recentFiles.size(); i++) {
-        filePathList.append(recentFiles.at(i).filePath);
+    RecentFilesList recentFiles;
+
+    if (max < 0) {
+        max = size;
     }
 
-    return filePathList;
+    int filesAdded = 0;
+
+    for (int i = 0; (i < size) && (filesAdded < max); i++) {
+        settings.setArrayIndex(i);
+
+        QString filePath = settings.value(FILE_PATH_KEY).toString();
+        int position = settings.value(CURSOR_POSITION_KEY, 0).toInt();
+        bool untitled = settings.value(UNTITLED_KEY, false).toBool();
+
+        if (!filePath.isNull() && !filePath.isEmpty() && QFileInfo(filePath).exists()) {
+            RecentFile recentFile;
+            recentFile.filePath = filePath;
+            recentFile.position = position;
+            recentFile.untitled = untitled;
+            recentFiles.append(recentFile);
+            filesAdded++;
+        }
+    }
+
+    settings.endArray();
+
+    return recentFiles;
 }
 
 void DocumentHistory::add
@@ -86,7 +96,7 @@ void DocumentHistory::add
 
     if (fileInfo.exists()) {
         QString sanitizedPath = fileInfo.canonicalFilePath();
-        RecentFilesList recentFiles = loadFromSettings();
+        RecentFilesList recentFiles = recentFiles();
         RecentFile lastFile;
 
         lastFile.filePath = sanitizedPath;
@@ -103,7 +113,7 @@ int DocumentHistory::cursorPosition(const QString &filePath)
     QString sanitizedPath = QFileInfo(filePath).canonicalFilePath();
     int position = 0;
 
-    RecentFilesList recentFiles = loadFromSettings();
+    RecentFilesList recentFiles = recentFiles();
     cleanUpHistory(recentFiles);
 
     foreach (RecentFile file, recentFiles) {
@@ -126,43 +136,8 @@ void DocumentHistory::clear()
     settings.remove(FILE_HISTORY_KEY);
 }
 
-RecentFilesList loadFromSettings(int max)
-{
-    QSettings settings;
-    int size = settings.beginReadArray(FILE_HISTORY_KEY);
-
-    RecentFilesList recentFiles;
-
-    if (max < 0) {
-        max = size;
-    }
-
-    int filesAdded = 0;
-
-    for (int i = 0; (i < size) && (filesAdded < max); i++) {
-        settings.setArrayIndex(i);
-
-        QString filePath = settings.value(FILE_PATH_KEY).toString();
-        int position = settings.value(CURSOR_POSITION_KEY, 0).toInt();
-
-        if (!filePath.isNull() && !filePath.isEmpty() && QFileInfo(filePath).exists()) {
-            RecentFile recentFile;
-            recentFile.filePath = filePath;
-            recentFile.position = position;
-            recentFiles.append(recentFile);
-            filesAdded++;
-        }
-    }
-
-    settings.endArray();
-
-    return recentFiles;
-}
-
-void storeToSettings
-(
-    const RecentFilesList &recentFiles
-)
+static void
+storeToSettings(const DocumentHistory::RecentFilesList &recentFiles)
 {
     QSettings settings;
 
@@ -188,10 +163,7 @@ void storeToSettings
     settings.endArray();
 }
 
-void cleanUpHistory
-(
-    RecentFilesList &recentFiles
-)
+static void cleanUpHistory(DocumentHistory::RecentFilesList &recentFiles)
 {
     while (recentFiles.size() > MAX_FILE_HISTORY_SIZE) {
         recentFiles.removeLast();

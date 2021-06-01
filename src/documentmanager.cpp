@@ -335,14 +335,13 @@ void DocumentManager::open(const QString &filePath)
             } else if (oldFilePath == d->document->filePath()) {
                 d->editor->navigateDocument(oldCursorPosition);
             } else if (d->fileHistoryEnabled) {
-                if (!oldFileWasNew) {
-                    DocumentHistory history;
-                    history.add
-                    (
-                        oldFilePath,
-                        oldCursorPosition
-                    );
-                }
+                DocumentHistory history;
+                history.add
+                (
+                    oldFilePath,
+                    oldCursorPosition,
+                    oldFileWasNew
+                );
             }
         }
     }
