@@ -33,13 +33,13 @@ namespace ghostwriter
  * It is reentrant, and different instances can be used from anywhere to
  * access the same file history.
  */
-class DocumentHistory
+class Library
 {
 public:
     /*
-    * Encapsulates the file path/cursor position as a pair.
-    */
-    class RecentFile
+     * Encapsulates the file path/cursor position as a pair.
+     */
+    class Bookmark
     {
     public:
         /**
@@ -60,41 +60,42 @@ public:
          */
         bool untitled;
 
-        inline bool operator==(const RecentFile &other)
+        inline bool operator==(const Bookmark &other)
         {
             return (other.filePath == filePath);
         }
     };
 
-    typedef QList<RecentFile> RecentFilesList;
-
     /**
      * Constructor.
      */
-    DocumentHistory();
+    Library(const QString& path = QString());
 
     /**
      * Destructor.
      */
-    ~DocumentHistory();
+    ~Library();
 
     /**
      * Returns the list of recent files, up to the maximum number specified.
      * Specify a value of -1 to get the entire history.
      */
-    RecentFilesList recentFiles(int max = -1);
+    QList<Bookmark> recentFiles(int max = -1);
 
     /**
      * Adds the given file path and cursor position to the history.
      */
-    void add(const QString &filePath,
+    void addRecent(const QString &filePath,
         int cursorPosition,
         bool untitled = false);
+
+    void favorite(const QString &filePath,
+        int cursorPosition);
 
     /**
      * Wipes the document history clean.
      */
-    void clear();
+    void clearRecent();
 
 signals:
     /**

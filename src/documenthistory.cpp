@@ -35,23 +35,23 @@ namespace ghostwriter
 {
 
 static void
-storeToSettings(const DocumentHistory::RecentFilesList &recentFiles);
+storeToSettings(const QList<Library::Bookmark> &recentFiles);
 
 static void
-cleanUpHistory(DocumentHistory::RecentFilesList &recentFiles);
+cleanUpHistory(QList<Library::Bookmark> &recentFiles);
 
-DocumentHistory::DocumentHistory()
+Library::Library()
 {
     ;
 }
 
-DocumentHistory::~DocumentHistory()
+Library::~Library()
 {
     ;
 }
 
-DocumentHistory::RecentFilesList
-DocumentHistory::recentFiles(int max)
+QList<Library::Bookmark>
+Library::recentFiles(int max)
 {
     QSettings settings;
     int size = settings.beginReadArray(FILE_HISTORY_KEY);
@@ -86,7 +86,7 @@ DocumentHistory::recentFiles(int max)
     return recentFiles;
 }
 
-void DocumentHistory::add
+void Library::add
 (
     const QString &filePath,
     int cursorPosition
@@ -108,36 +108,36 @@ void DocumentHistory::add
     }
 }
 
-int DocumentHistory::cursorPosition(const QString &filePath)
-{
-    QString sanitizedPath = QFileInfo(filePath).canonicalFilePath();
-    int position = 0;
+// int Library::cursorPosition(const QString &filePath)
+// {
+//     QString sanitizedPath = QFileInfo(filePath).canonicalFilePath();
+//     int position = 0;
 
-    RecentFilesList recentFiles = recentFiles();
-    cleanUpHistory(recentFiles);
+//     RecentFilesList recentFiles = recentFiles();
+//     cleanUpHistory(recentFiles);
 
-    foreach (RecentFile file, recentFiles) {
-        if (sanitizedPath == file.filePath) {
-            position = file.position;
-            break;
-        }
-    }
+//     foreach (RecentFile file, recentFiles) {
+//         if (sanitizedPath == file.filePath) {
+//             position = file.position;
+//             break;
+//         }
+//     }
 
-    if (position < 0) {
-        position = 0;
-    }
+//     if (position < 0) {
+//         position = 0;
+//     }
 
-    return position;
-}
+//     return position;
+// }
 
-void DocumentHistory::clear()
+void Library::clearRecent()
 {
     QSettings settings;
     settings.remove(FILE_HISTORY_KEY);
 }
 
 static void
-storeToSettings(const DocumentHistory::RecentFilesList &recentFiles)
+storeToSettings(const QList<Library::Bookmark> &recentFiles)
 {
     QSettings settings;
 
@@ -163,7 +163,7 @@ storeToSettings(const DocumentHistory::RecentFilesList &recentFiles)
     settings.endArray();
 }
 
-static void cleanUpHistory(DocumentHistory::RecentFilesList &recentFiles)
+static void cleanUpHistory(QList<Library::Bookmark> &recentFiles)
 {
     while (recentFiles.size() > MAX_FILE_HISTORY_SIZE) {
         recentFiles.removeLast();
