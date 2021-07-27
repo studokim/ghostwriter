@@ -43,7 +43,7 @@
 
 #include "3rdparty/QtAwesome/QtAwesome.h"
 
-#include "documenthistory.h"
+#include "library.h"
 #include "exporter.h"
 #include "exporterfactory.h"
 #include "findreplace.h"

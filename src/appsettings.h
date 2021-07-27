@@ -64,6 +64,8 @@ public:
     Q_SLOT void setBackupFileEnabled(bool enabled);
     Q_SIGNAL void backupFileChanged(bool enabled);
 
+    QString draftsLocation() const;
+
     QFont editorFont() const;
     void setEditorFont(const QFont &font);
 

@@ -81,6 +81,7 @@ public:
     bool autoMatchEnabled;
     bool autoSaveEnabled;
     bool backupFileEnabled;
+    bool draftsLocation;
     bool bulletPointCyclingEnabled;
     bool displayTimeInFullScreenEnabled;
     bool fileHistoryEnabled;
@@ -212,6 +213,13 @@ void AppSettings::setBackupFileEnabled(bool enabled)
     
     d->backupFileEnabled = enabled;
     emit backupFileChanged(enabled);
+}
+
+QString AppSettings::draftsLocation() const
+{
+    Q_D(AppSettings);
+
+    return d->draftsLocation;
 }
 
 QFont AppSettings::editorFont() const
@@ -702,6 +710,13 @@ AppSettings::AppSettings()
 
     QDir::setSearchPaths("dict", dictdirs);
 
+    QDir draftsDir(userDir + "/drafts");
+
+    if (!draftsDir.exists()) {
+        draftsDir.mkpath(draftsDir.path());
+    }
+    
+    d->draftsLocation = draftsDir.absolutePath();
 
     // End FocusWriter lift/mod
 
@@ -710,7 +725,7 @@ AppSettings::AppSettings()
     // even monospaced, or, at best "Courier".  QTBUG-34082 seems to be what is
     // causing the issue.  Regardless, we want the prettiest monospaced font
     // available, so see which preferred fonts are available on the system
-    // before before resorting to style hints.
+    // before resorting to style hints.
     //
     QStringList preferredMonospaceFonts;
 

@@ -33,7 +33,8 @@
 #include <QTextStream>
 #include <QTimer>
 
-#include "documenthistory.h"
+#include "bookmark.h"
+#include "library.h"
 #include "documentmanager.h"
 #include "exportdialog.h"
 #include "exporter.h"
@@ -200,7 +201,7 @@ DocumentManager::DocumentManager
         [this, d](bool modified) {
             if
             (
-                d->document->isNew()
+                d->document->isDraft()
                 || d->document->isReadOnly()
                 || !d->autoSaveEnabled
             ) {
@@ -270,9 +271,30 @@ void DocumentManager::setAutoSaveEnabled(bool enabled)
     d->autoSaveEnabled = enabled;
 
     if (enabled) {
+        if (d->document->isDraft() 
+                && (d->document->name().isNull()
+                    || d->document->name().isEmpty())) {
+            d->document->setName(d->draftLocation + "/" +
+                tr("UNTITLED %1").arg(d->document->timestamp().toString()));
+        }
+
         emit documentModifiedChanged(false);
-    } else if (d->document->isModified()) {
-        d->document->setModified(false);
+    } else {
+        if (d->document->isDraft()
+                && !d->document->name().isNull()
+                && !d->document->name().isEmpty()) {
+            QFile file(d->document->name());
+
+            if (file.exists()) {
+                file.remove();
+            }
+
+            d->document->setName(QString());
+        }
+
+        if (d->document->isModified()) {
+            d->document->setModified(false);
+        }
     }
 }
 
@@ -295,8 +317,8 @@ void DocumentManager::open(const QString &filePath)
         } else {
             QString startingDirectory = QString();
 
-            if (!d->document->isNew()) {
-                startingDirectory = QFileInfo(d->document->filePath()).dir().path();
+            if (!d->document->isDraft()) {
+                startingDirectory = QFileInfo(d->document->name()).dir().path();
             }
 
             path =
@@ -323,24 +345,22 @@ void DocumentManager::open(const QString &filePath)
                 return;
             }
 
-            QString oldFilePath = d->document->filePath();
+            QString oldFilePath = d->document->name();
             int oldCursorPosition = d->editor->textCursor().position();
-            bool oldFileWasNew = d-> document->isNew();
 
             if (!d->loadFile(path)) {
                 // The error dialog should already have been displayed
                 // in loadFile().
                 //
                 return;
-            } else if (oldFilePath == d->document->filePath()) {
+            } else if (oldFilePath == d->document->name()) {
                 d->editor->navigateDocument(oldCursorPosition);
             } else if (d->fileHistoryEnabled) {
-                DocumentHistory history;
-                history.add
+                Library library;
+                library.addRecent
                 (
                     oldFilePath,
-                    oldCursorPosition,
-                    oldFileWasNew
+                    oldCursorPosition
                 );
             }
         }
@@ -352,15 +372,13 @@ void DocumentManager::reopenLastClosedFile()
     Q_D(DocumentManager);
     
     if (d->fileHistoryEnabled) {
-        DocumentHistory history;
-        QStringList recentFiles = history.recentFiles(2);
+        Library library;
+        QList<Bookmark> recentFiles = library.recentFiles();
 
-        if (!d->document->isNew()) {
-            recentFiles.removeAll(d->document->filePath());
-        }
+        recentFiles.removeAll(Bookmark(d->document->name()));
 
         if (!recentFiles.isEmpty()) {
-            open(recentFiles.first());
+            open(recentFiles.first().filePath());
             emit documentClosed();
         }
     }
@@ -370,7 +388,7 @@ void DocumentManager::reload()
 {
     Q_D(DocumentManager);
     
-    if (!d->document->isNew()) {
+    if (!d->document->isDraft()) {
         if (d->document->isModified()) {
             // Prompt user if he wants to save changes.
             int response =
@@ -391,7 +409,7 @@ void DocumentManager::reload()
         QTextCursor cursor = d->editor->textCursor();
         int pos = cursor.position();
 
-        if (d->loadFile(d->document->filePath())) {
+        if (d->loadFile(d->document->name())) {
             cursor.setPosition(pos);
             d->editor->setTextCursor(cursor);
         }
@@ -402,7 +420,7 @@ void DocumentManager::rename()
 {
     Q_D(DocumentManager);
     
-    if (d->document->isNew()) {
+    if (d->document->isDraft()) {
         saveAs();
     } else {
         QString filePath =
@@ -415,14 +433,14 @@ void DocumentManager::rename()
             );
 
         if (!filePath.isNull() && !filePath.isEmpty()) {
-            QFile file(d->document->filePath());
+            QFile file(d->document->name());
             bool success = file.rename(filePath);
 
             if (!success) {
                 MessageBoxHelper::critical
                 (
                     d->editor,
-                    tr("Failed to rename %1").arg(d->document->filePath()),
+                    tr("Failed to rename %1").arg(d->document->name()),
                     file.errorString()
                 );
                 return;
@@ -438,7 +456,7 @@ bool DocumentManager::save()
 {
     Q_D(DocumentManager);
     
-    if (d->document->isNew() || !d->checkPermissionsBeforeSave()) {
+    if (d->document->isDraft() || !d->checkPermissionsBeforeSave()) {
         return this->saveAs();
     } else {
         d->saveFile();
@@ -452,8 +470,8 @@ bool DocumentManager::saveAs()
     
     QString startingDirectory = QString();
 
-    if (!d->document->isNew()) {
-        startingDirectory = QFileInfo(d->document->filePath()).dir().path();
+    if (!d->document->isDraft()) {
+        startingDirectory = QFileInfo(d->document->name()).dir().path();
     }
 
     QString filePath =
@@ -486,9 +504,9 @@ bool DocumentManager::close()
         // Get the document's information before closing it out
         // so we can store history information about it.
         //
-        QString filePath = d->document->filePath();
+        QString filePath = d->document->name();
         int cursorPosition = d->editor->textCursor().position();
-        bool documentIsNew = d->document->isNew();
+        bool documentisDraft = d->document->isDraft();
 
         // Set up a new, untitled document.  Note that the document
         // needs to be wiped clean before emitting the documentClosed()
@@ -510,11 +528,12 @@ bool DocumentManager::close()
         d->editor->setReadOnly(false);
         d->document->setReadOnly(false);
         d->setFilePath(QString());
+        d->document->setDraft(true);
         d->document->setModified(false);
 
-        if (d->fileHistoryEnabled && !documentIsNew) {
-            DocumentHistory history;
-            history.add
+        if (d->fileHistoryEnabled && (!documentisDraft || autoSaveEnabled()) {
+            Library library;
+            library.addRecent
             (
                 filePath,
                 cursorPosition
@@ -549,11 +568,11 @@ void DocumentManagerPrivate::onSaveCompleted()
         MessageBoxHelper::critical
         (
             editor,
-            QObject::tr("Error saving %1").arg(this->document->filePath()),
+            QObject::tr("Error saving %1").arg(this->document->name()),
             err
         );
-    } else if (!this->fileWatcher->files().contains(this->document->filePath())) {
-        fileWatcher->addPath(document->filePath());
+    } else if (!this->fileWatcher->files().contains(this->document->name())) {
+        fileWatcher->addPath(document->name());
     }
 
     this->document->setTimestamp(QDateTime::currentDateTime());
@@ -623,13 +642,9 @@ void DocumentManagerPrivate::autoSaveFile()
 {
     Q_Q(DocumentManager);
 
-    if
-    (
-        this->autoSaveEnabled &&
-        !this->document->isNew() &&
-        !this->document->isReadOnly() &&
-        this->document->isModified()
-    ) {
+    if (this->autoSaveEnabled &&
+            !this->document->isReadOnly() &&
+            this->document->isModified()) {
         q->save();
     }
 }
@@ -641,18 +656,15 @@ void DocumentManagerPrivate::saveFile()
     document->setModified(false);
     emit q->documentModifiedChanged(false);
 
-    if
-    (
-        this->saveFutureWatcher->isRunning() ||
-        this->saveFutureWatcher->isStarted()
-    ) {
+    if (this->saveFutureWatcher->isRunning() ||
+            this->saveFutureWatcher->isStarted()) {
         this->saveFutureWatcher->waitForFinished();
     }
 
     saveInProgress = true;
 
-    if (fileWatcher->files().contains(document->filePath())) {
-        this->fileWatcher->removePath(document->filePath());
+    if (fileWatcher->files().contains(document->name())) {
+        this->fileWatcher->removePath(document->name());
     }
 
     document->setTimestamp(QDateTime::currentDateTime());
@@ -662,7 +674,7 @@ void DocumentManagerPrivate::saveFile()
         (
             this,
             &DocumentManagerPrivate::saveToDisk,
-            document->filePath(),
+            document->name(),
             document->toPlainText(),
             createBackupOnSave
         );
@@ -735,8 +747,9 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
     inputFile.close();
 
     if (fileHistoryEnabled) {
-        DocumentHistory history;
-        editor->navigateDocument(history.cursorPosition(filePath));
+        Library library;
+        Bookmark bookmark = library.search(filePath);
+        editor->navigateDocument(bookmark.position());
     } else {
         editor->navigateDocument(0);
     }
@@ -774,11 +787,11 @@ void DocumentManagerPrivate::setFilePath(const QString &filePath)
 {
     Q_Q(DocumentManager);
 
-    if (!document->isNew()) {
-        fileWatcher->removePath(document->filePath());
+    if (!document->isDraft() || autoSaveEnabled) {
+        fileWatcher->removePath(document->name());
     }
 
-    document->setFilePath(filePath);
+    document->setName(filePath);
 
     if (!filePath.isNull() && !filePath.isEmpty()) {
         QFileInfo fileInfo(filePath);
@@ -800,13 +813,13 @@ bool DocumentManagerPrivate::checkSaveChanges()
     Q_Q(DocumentManager);
 
     if (document->isModified()) {
-        if (autoSaveEnabled && !document->isNew() && !document->isReadOnly()) {
+        if (autoSaveEnabled && !document->isReadOnly()) {
             return q->save();
         } else {
             // Prompt user if he wants to save changes.
             QString text;
 
-            if (document->isNew()) {
+            if (document->isDraft()) {
                 text = QObject::tr("File has been modified.");
             } else {
                 text = (QObject::tr("%1 has been modified.")
@@ -825,7 +838,7 @@ bool DocumentManagerPrivate::checkSaveChanges()
 
             switch (response) {
             case QMessageBox::Save:
-                if (document->isNew()) {
+                if (document->isDraft()) {
                     return q->saveAs();
                 } else {
                     return q->save();
@@ -849,7 +862,7 @@ bool DocumentManagerPrivate::checkPermissionsBeforeSave()
             MessageBoxHelper::question
             (
                 editor,
-                QObject::tr("%1 is read only.").arg(document->filePath()),
+                QObject::tr("%1 is read only.").arg(document->name()),
                 QObject::tr("Overwrite protected file?"),
                 QMessageBox::Yes | QMessageBox::No,
                 QMessageBox::Yes
@@ -858,8 +871,8 @@ bool DocumentManagerPrivate::checkPermissionsBeforeSave()
         if (QMessageBox::No == response) {
             return false;
         } else {
-            QFile file(document->filePath());
-            fileWatcher->removePath(document->filePath());
+            QFile file(document->name());
+            fileWatcher->removePath(document->name());
 
             if (!file.remove()) {
                 if (file.setPermissions(QFile::WriteUser | QFile::ReadUser) && file.remove()) {
@@ -873,7 +886,7 @@ bool DocumentManagerPrivate::checkPermissionsBeforeSave()
                         QObject::tr("Please save file to another location.")
                     );
 
-                    fileWatcher->addPath(document->filePath());
+                    fileWatcher->addPath(document->name());
                     return false;
                 }
             } else {

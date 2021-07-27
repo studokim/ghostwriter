@@ -20,23 +20,30 @@
 #ifndef MARKUPDOCUMENT_H
 #define MARKUPDOCUMENT_H
 
-#include <QTextDocument>
-#include <QString>
 #include <QDateTime>
+#include <QObject>
+#include <QScopedPointer>
+#include <QString>
 #include <QTextBlock>
+#include <QTextDocument>
+
 #include "markdownast.h"
 
 namespace ghostwriter
 {
 /**
- * Text document that maintains timestamp, read-only state, and new vs.
- * saved status.
+ * Text document that maintains timestamp, read-only state, draft vs.
+ * saved status, and Markdown AST.
  */
+class MarkdownDocumentPrivate;
 class MarkdownDocument : public QTextDocument
 {
     Q_OBJECT
+    Q_DECLARE_PRIVATE(MarkdownDocument)
 
 public:
+    static void setDraftDirectory(const QString &path);
+
     /**
      * Constructor.
      */
@@ -69,9 +76,9 @@ public:
     void setFilePath(const QString &path);
 
     /**
-     * Returns true if the document is new with no file path.
+     * Returns true if the document is a new draft.
      */
-    bool isNew() const;
+    bool isDraft() const;
 
     /**
      * Returns true if the document has read only permissions.
@@ -107,9 +114,9 @@ public:
 
 signals:
     /**
-     * Emitted when the file path changes.
+     * Emitted when the file name changes.
      */
-    void filePathChanged();
+    void fileNameChanged();
 
     /**
      * Emitted when the QTextBlock at the given position in the document
@@ -123,17 +130,88 @@ signals:
      */
     void textBlockRemoved(const QTextBlock &block);
 
-private:
-    QString m_displayName;
-    QString m_filePath;
-    bool readOnlyFlag;
-    QDateTime m_timestamp;
-    MarkdownAST *ast;
+    /**
+     * Emitted when the document's display name changes, which is useful
+     * for updating the editor's containing window or tab to have the new
+     * document display name.
+     */
+    void documentDisplayNameChanged(const QString &displayName);
 
-    /*
-    * Initializes the class for an untitled document.
-    */
-    void initializeUntitledDocument();
+    /**
+     * Emitted when the document's modification state changes.  The
+     * modified parameter will be true if the document has been modified.
+     */
+    void documentModifiedChanged(bool modified);
+
+    /**
+     * Emitted when a document is loaded from disk.
+     */
+    void documentLoaded();
+
+    /**
+     * Emitted when the document is closed.
+     */
+    void documentClosed();
+
+public slots:
+
+    /**
+     * Sets whether auto-saving of the file is enabled.
+     */
+    void setAutoSaveEnabled(bool enabled);
+
+    /**
+     * Sets whether a backup file is created (with a .backup extension)
+     * on disk before the document is saved.
+     */
+    void setFileBackupEnabled(bool enabled);
+
+    /**
+     * Reloads document from disk contents.  This method does nothing if
+     * the document is new and is not associated with a file on disk.
+     * Note that if the document is modified, this method will discard
+     * changes before reloading.  It is left to the caller to check for
+     * modification and save any changes before calling this method.
+     */
+    void reload();
+
+    /**
+     * Renames file represented by this document to the given file path.
+     * This method does nothing if the document is new and is not
+     * associated with a file on disk.
+     */
+    void rename();
+
+    /**
+     * Savse document contents to disk.  This method does nothing if the
+     * document is new and is not associated with a file on disk.
+     */
+    bool save();
+
+    /**
+     * Prompts the user for a file path location, and saves the document
+     * contents to the selected file path. This method is
+     * also called if the document is new and is now going to be saved to
+     * a file path for the first time.  Future save operations to the same
+     * file path can be achieved by calling save() instead.
+     */
+    bool saveAs();
+
+    /**
+     * Closes the current file, clearing the editor of text and leaving
+     * only an untitled "new" document in its place.  Note that isNew()
+     * will return true after this method is called.
+     */
+    bool close();
+
+    /**
+     * Exports the current file, prompting the user for the desired
+     * export format.
+     */
+    void exportFile();
+
+private:
+    QScopedPointer<MarkdownDocumentPrivate *> d_ptr;
 };
 } // namespace ghostwriter
 

@@ -92,12 +92,12 @@ INCLUDEPATH += src src/spelling
 HEADERS += \
     src/abstractstatisticswidget.h \
     src/appsettings.h \
+    src/bookmark.h \
     src/cmarkgfmapi.h \
     src/cmarkgfmexporter.h \
     src/colorscheme.h \
     src/colorschemepreviewer.h \
     src/commandlineexporter.h \
-    src/documenthistory.h \
     src/documentmanager.h \
     src/documentstatistics.h \
     src/documentstatisticswidget.h \
@@ -106,6 +106,7 @@ HEADERS += \
     src/exporterfactory.h \
     src/exportformat.h \
     src/htmlpreview.h \
+    src/library.h \
     src/localedialog.h \
     src/mainwindow.h \
     src/markdowndocument.h \
@@ -145,11 +146,11 @@ SOURCES += \
     src/abstractstatisticswidget.cpp \
     src/appmain.cpp \
     src/appsettings.cpp \
+    src/bookmark.cpp \
     src/cmarkgfmapi.cpp \
     src/cmarkgfmexporter.cpp \
     src/colorschemepreviewer.cpp \
     src/commandlineexporter.cpp \
-    src/documenthistory.cpp \
     src/documentmanager.cpp \
     src/documentstatistics.cpp \
     src/documentstatisticswidget.cpp \
@@ -158,6 +159,7 @@ SOURCES += \
     src/exporterfactory.cpp \
     src/exportformat.cpp \
     src/htmlpreview.cpp \
+    src/library.cpp \
     src/localedialog.cpp \
     src/mainwindow.cpp \
     src/markdowndocument.cpp \
