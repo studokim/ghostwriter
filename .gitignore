@@ -36,6 +36,7 @@ Makefile*
 *.qm
 
 build/
+.vscode/
 
 # Mac finder stub
 .DS_Store
