@@ -1269,7 +1269,7 @@ namespace ghostwriter
         statusIndicator->hide();
 
         statisticsIndicator = new StatisticsIndicator(this->documentStats, this->sessionStats, this);
-        dictionaryIndicator = new DictionaryIndicator(this->documentStats, this->sessionStats, this);
+        dictionaryIndicator = new DictionaryIndicator(this);
 
         statisticsIndicator->setFrame(QFrame::NoFrame);
         dictionaryIndicator->setFrame(QFrame::NoFrame);
@@ -1629,8 +1629,10 @@ namespace ghostwriter
         documentStatsWidget->setStyleSheet(styler.sidebarWidgetStyleSheet());
         sessionStatsWidget->setStyleSheet("");
         sessionStatsWidget->setStyleSheet(styler.sidebarWidgetStyleSheet());
-
         htmlPreview->setStyleSheet(styler.htmlPreviewCss());
+
+        statisticsIndicator->setStyleSheet("color: " + styler.interfaceTextColor().name() + "; background-color: " + styler.faintColor().name());
+        dictionaryIndicator->setStyleSheet("color: " + styler.interfaceTextColor().name() + "; background-color: " + styler.faintColor().name());
 
         adjustEditorWidth(this->width());
     }

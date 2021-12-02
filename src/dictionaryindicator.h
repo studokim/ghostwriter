@@ -21,9 +21,7 @@
 #define DICTIONARYINDICATOR_H
 
 #include <QComboBox>
-
-#include "documentstatistics.h"
-#include "sessionstatistics.h"
+#include "appsettings.h"
 
 namespace ghostwriter
 {
@@ -40,9 +38,7 @@ namespace ghostwriter
         /**
      * Constructor.
      */
-        DictionaryIndicator(DocumentStatistics *documentStats,
-                            SessionStatistics *sessionStats,
-                            QWidget *parent = nullptr);
+        DictionaryIndicator(QWidget *parent = nullptr);
 
         /**
      * Destructor.
@@ -50,6 +46,9 @@ namespace ghostwriter
         ~DictionaryIndicator();
 
         void showPopup();
+        QString trimAfterFirstWhitespace(QString languageName);
+        QString languageName(const QString &language);
+        AppSettings *appSettings;
     };
 }
 

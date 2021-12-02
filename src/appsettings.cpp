@@ -52,6 +52,7 @@
 #define GW_TAB_WIDTH_KEY "Tabs/tabWidth"
 #define GW_SPACES_FOR_TABS_KEY "Tabs/insertSpacesForTabs"
 #define GW_DICTIONARY_KEY "Spelling/locale"
+#define GW_FAVORITE_DICTIONARY_KEY "Spelling/favoriteLocales"
 #define GW_LOCALE_KEY "Application/locale"
 #define GW_LIVE_SPELL_CHECK_KEY "Spelling/liveSpellCheck"
 #define GW_SIDEBAR_OPEN_KEY "Window/sidebarOpen"
@@ -104,6 +105,7 @@ namespace ghostwriter
         QFont previewCodeFont;
         QString autoMatchedCharFilter;
         QString dictionaryLanguage;
+        QStringList dictionaryFavoriteLocales;
         QString dictionaryPath;
         QString locale;
         QString themeDirectoryPath;
@@ -141,6 +143,7 @@ namespace ghostwriter
         appSettings.setValue(GW_BACKUP_FILE_KEY, QVariant(d->backupFileEnabled));
         appSettings.setValue(GW_BULLET_CYCLING_KEY, QVariant(d->bulletPointCyclingEnabled));
         appSettings.setValue(GW_DICTIONARY_KEY, QVariant(d->dictionaryLanguage));
+        appSettings.setValue(GW_FAVORITE_DICTIONARY_KEY, QVariant(d->dictionaryFavoriteLocales));
         appSettings.setValue(GW_DISPLAY_TIME_IN_FULL_SCREEN_KEY, QVariant(d->displayTimeInFullScreenEnabled));
         appSettings.setValue(GW_EDITOR_WIDTH_KEY, QVariant(d->editorWidth));
         appSettings.setValue(GW_FOCUS_MODE_KEY, QVariant(d->focusMode));
@@ -520,6 +523,21 @@ namespace ghostwriter
         emit dictionaryLanguageChanged(language);
     }
 
+    QStringList AppSettings::dictionaryFavoriteLocales() const
+    {
+        Q_D(const AppSettings);
+
+        return d->dictionaryFavoriteLocales;
+    }
+
+    void AppSettings::setDictionaryFavoriteLocales(const QStringList &languages)
+    {
+        Q_D(AppSettings);
+
+        d->dictionaryFavoriteLocales = languages;
+        // emit dictionaryLanguageChanged(languages);
+    }
+
     QString AppSettings::locale() const
     {
         Q_D(const AppSettings);
@@ -810,6 +828,7 @@ namespace ghostwriter
         d->themeName = appSettings.value(GW_THEME_KEY, QVariant("Classic Light")).toString();
         d->darkModeEnabled = appSettings.value(GW_DARK_MODE_KEY, QVariant(true)).toBool();
         d->dictionaryLanguage = appSettings.value(GW_DICTIONARY_KEY, QLocale().name()).toString();
+        d->dictionaryFavoriteLocales = appSettings.value(GW_FAVORITE_DICTIONARY_KEY, QVariant(QStringList{"en_US"})).toStringList();
 
         // Determine locale for dictionary language (for use in spell checking).
         QString language = DictionaryManager::instance().availableDictionary(d->dictionaryLanguage);
