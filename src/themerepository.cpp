@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- * Copyright (C) 2014-2021 wereturtle
+ * Copyright (C) 2014-2020 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QMetaEnum>
-#include <QMultiMap>
 #include <QSettings>
 #include <QStack>
 #include <QString>
@@ -98,11 +97,11 @@ ThemeRepository::ThemeRepository()
     d->themeDirectory.setNameFilters(QStringList("*.json"));
 
     QFileInfoList themeFiles = d->themeDirectory.entryInfoList();
-    QMultiMap<QString, QString> sortedThemes;
+    QMap<QString, QString> sortedThemes;
 
     for (int i = 0; i < themeFiles.size(); i++) {
         QString baseName = themeFiles[i].baseName();
-        sortedThemes.insert(baseName.toLower(), baseName);
+        sortedThemes.insertMulti(baseName.toLower(), baseName);
     }
 
     d->customThemeNames = sortedThemes.values();

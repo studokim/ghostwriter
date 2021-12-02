@@ -25,8 +25,6 @@
 #include <QFontInfo>
 #include <QLocale>
 #include <QSettings>
-#include <QStandardPaths>
-#include <QString>
 #include <QStringList>
 
 #include "appsettings.h"
@@ -126,7 +124,6 @@ namespace ghostwriter
         }
 
         return AppSettingsPrivate::instance;
-
     }
 
     AppSettings::~AppSettings()
@@ -177,7 +174,6 @@ namespace ghostwriter
     {
         Q_D(const AppSettings);
 
-
         return d->themeDirectoryPath;
     }
 
@@ -205,7 +201,6 @@ namespace ghostwriter
     void AppSettings::setAutoSaveEnabled(bool enabled)
     {
         Q_D(AppSettings);
-
 
         d->autoSaveEnabled = enabled;
         emit autoSaveChanged(enabled);
@@ -702,7 +697,6 @@ namespace ghostwriter
         }
         else
         {
-
 #ifdef Q_OS_WIN32
             // On Windows, don't ever use the registry to store settings, for the
             // sake of cleanness, ability to load configuration files on other
@@ -732,7 +726,7 @@ namespace ghostwriter
 
         d->themeDirectoryPath = userDir + "/themes";
 
-    QDir themeDir(d->themeDirectoryPath);
+        QDir themeDir(d->themeDirectoryPath);
 
         if (!themeDir.exists())
         {
@@ -763,7 +757,6 @@ namespace ghostwriter
         QDir::setSearchPaths("dict", dictdirs);
 
         // End FocusWriter lift/mod
-
 
         // Depending on the OS and Qt version, the default monospaced font returned
         // by the Monospace style hint and/or font family tends to something not

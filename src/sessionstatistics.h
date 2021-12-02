@@ -1,4 +1,4 @@
-﻿/***********************************************************************
+/***********************************************************************
  *
  * Copyright (C) 2016-2020 wereturtle
  *
@@ -44,8 +44,6 @@ public:
      */
     virtual ~SessionStatistics();
 
-    int wordCount() const;
-
 signals:
     /**
      * Emitted when word count changes.
@@ -65,7 +63,7 @@ signals:
     /**
      * Emitted when writing time in this session changes.
      */
-    void writingTimeChanged(int value);
+    void writingTimeChanged(unsigned long value);
 
     /**
      * Emitted when the percentage of time spent idle

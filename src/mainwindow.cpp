@@ -39,7 +39,7 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QStatusBar>
-#include <QTemporaryFile>
+#include <QTextStream>
 
 #include "3rdparty/QtAwesome/QtAwesome.h"
 
@@ -368,7 +368,6 @@ namespace ghostwriter
         if (!fileToOpen.isNull() && !fileToOpen.isEmpty())
         {
             documentManager->open(fileToOpen);
-
         }
 
         if (fileLoadError)

@@ -1,6 +1,6 @@
 /***********************************************************************
  *
- * Copyright (C) 2014-2021 wereturtle
+ * Copyright (C) 2014-2020 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #define DOCUMENTMANAGER_H
 
 #include <QObject>
-#include <QScopedPointer>
 
 #include "markdowndocument.h"
 #include "markdowneditor.h"
@@ -150,12 +149,6 @@ public slots:
     void setFileBackupEnabled(bool enabled);
 
     /**
-     * Sets draft directory location where draft files (i.e., autosaved
-     * untitled documents) will be saved.
-     */
-    void setDraftLocation(const QString &directory);
-
-    /**
      * Prompts the user for a file path, and loads the document with the
      * file contents at the selected path.
      */
@@ -184,7 +177,7 @@ public slots:
     void rename();
 
     /**
-     * Saves document contents to disk.  This method does nothing if the
+     * Savse document contents to disk.  This method does nothing if the
      * document is new and is not associated with a file on disk.
      */
     bool save();
@@ -213,6 +206,9 @@ public slots:
 
 private:
     QScopedPointer<DocumentManagerPrivate> d_ptr;
+
+    friend class DocumentManagerPrivate;
+
 };
 }
 

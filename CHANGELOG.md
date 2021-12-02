@@ -5,22 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2021-11-20
-
-#### Added
-
-* Untitled documents are now autosaved to a draft folder when autosave is enabled.
-* Added preferences button to open the draft folder location where untitled documents are autosaved.
-* Added check box option to load last opened file on startup.  If left unchecked, a new file will be opened on startup
-* Added ability to word count indicator in status bar to display a different statistic. (The indicator is now a combo box.)
-* Updated Brazilian Portuguese translation.
-
-## [2.0.2] - 2021-06-27
+## [Unreleased]
 
 ### Fixed
 
 * Issue #615: Unicode characters are properly displayed in the sidebar's Outline.
-* Issue #619: Chinese and other languages with unicode characters now display properly in the HTML preview.
 
 ## [2.0.1] - 2021-05-16
 
@@ -187,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Issue #302: ghostwriter will now look for default Qt translations on the standard Qt translations path (for standard buttons/text). These default Qt translations have been included in the Windows installer translations folder and portable Windows Zip, and will be loaded automatically based on the currently selected application language.
 * Some tweaks have been made to the parsing/highlighting of emphasized text to handle nested emphasis cases better. As part of this effort, ghostwriter uses a Qt 5-specific regular expression class that is not available in Qt 4. As such, ghostwriter can no longer be built with Qt and must be built with Qt 5.
 * Issue #272: Fixed issue with Focus mode where inserting matching characters around a selection was causing the application to crash.
-* Issue #260: Added compatibility with Pandoc version 2 and MultiMarkdown version 6.
+* Issue #260: Added compatability with Pandoc version 2 and MultiMarkdown version 6.
 * Fixed issue where HTML preview scrolls to the top if the new HTML from a modified document matches the old HTML, even if the markup used in the source document did change.
 * Fixed issue where current word is not live spell checked if the user switches the text cursor to a different line.
 * Fixed issue where prompt to reload a file that has been modified externally was being displayed multiple times per file change. This seems to have been triggered by some editors like Sublime Text that perform multiple file saves for a single file modification.

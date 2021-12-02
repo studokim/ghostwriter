@@ -1,6 +1,6 @@
-﻿/***********************************************************************
+/***********************************************************************
  *
- * Copyright (C) 2014-2021 wereturtle
+ * Copyright (C) 2014-2020 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,12 +28,10 @@
 #include <QMessageBox>
 #include <QPair>
 #include <QString>
-#include <QStandardPaths>
 #include <QtConcurrentRun>
 #include <QTextDocument>
 #include <QTextStream>
 #include <QTimer>
-#include <QDebug>
 
 #include "documenthistory.h"
 #include "documentmanager.h"
@@ -66,10 +64,6 @@ public:
     {
 
     }
-
-    const QString draftName = QObject::tr("untitled");
-
-    QString draftLocation;
 
     DocumentManager *q_ptr;
     MarkdownDocument *document;
@@ -105,14 +99,8 @@ public:
     */
     void saveFile();
 
-    /*
-    * Handles any errors or tidying up after an asynchronous save operation.
-    */
     void onSaveCompleted();
 
-    /*
-    * Handles the event where a file as been modified externally on disk.
-    */
     void onFileChangedExternally(const QString &path);
 
     /*
@@ -162,22 +150,7 @@ public:
     */
     void backupFile(const QString &filePath) const;
 
-    /*
-    * Handles autosave operation upon autosave timer expiration.
-    */
     void autoSaveFile();
-
-    /*
-    * Returns true if document is named as "untitled" and located in the
-    * configured draft location.
-    */
-    bool documentIsDraft();
-
-    /*
-    * Creates a draft (named "untitled-##.md") document in the configured
-    * draft location.
-    */
-    void createDraft();
 };
 
 const QString DocumentManagerPrivate::FILE_CHOOSER_FILTER =
@@ -203,9 +176,6 @@ DocumentManager::DocumentManager
     d->documentModifiedNotifVisible = false;
     d->saveFutureWatcher = new QFutureWatcher<QString>(this);
 
-    d->draftLocation =
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-
     d->fileWatcher = new QFileSystemWatcher(this);
     d->document = (MarkdownDocument *) editor->document();
 
@@ -213,38 +183,44 @@ DocumentManager::DocumentManager
     d->autoSaveTimer = new QTimer(this);
     d->autoSaveTimer->start(60000);
 
-    this->connect(d->autoSaveTimer,
+    this->connect
+    (
+        d->autoSaveTimer,
         &QTimer::timeout,
         [d]() {
             d->autoSaveFile();
         }
     );
 
-    connect(d->document,
+
+    connect
+    (
+        d->document,
         &MarkdownDocument::modificationChanged,
         [this, d](bool modified) {
-            if (d->document->isReadOnly()
-                    || !d->autoSaveEnabled) {
+            if
+            (
+                d->document->isNew()
+                || d->document->isReadOnly()
+                || !d->autoSaveEnabled
+            ) {
                 emit documentModifiedChanged(modified);
-            }
-
-            if (modified
-                    && d->autoSaveEnabled 
-                    && d->document->isNew()
-                    && (d->document->characterCount() > 0)) {
-                d->createDraft();
             }
         }
     );
 
-    this->connect(d->saveFutureWatcher,
+    this->connect
+    (
+        d->saveFutureWatcher,
         &QFutureWatcher<QString>::finished,
         [d]() {
             d->onSaveCompleted();
         }
     );
 
-    this->connect(d->fileWatcher,
+    this->connect
+    (
+        d->fileWatcher,
         &QFileSystemWatcher::fileChanged,
         [d](const QString & path) {
             d->onFileChangedExternally(path);
@@ -273,25 +249,6 @@ bool DocumentManager::autoSaveEnabled() const
     return d->autoSaveEnabled;
 }
 
-void DocumentManager::setAutoSaveEnabled(bool enabled)
-{
-    Q_D(DocumentManager);
-    
-    d->autoSaveEnabled = enabled;
-
-    if (enabled) {
-        if (d->document->isNew()
-            && (d->document->characterCount() > 0)
-            && d->document->isModified()) {
-            d->createDraft();
-        }
-
-        emit documentModifiedChanged(false);
-    } else if (d->document->isModified()) {
-        d->document->setModified(false);
-    }
-}
-
 bool DocumentManager::fileBackupEnabled() const
 {
     Q_D(const DocumentManager);
@@ -299,31 +256,31 @@ bool DocumentManager::fileBackupEnabled() const
     return d->createBackupOnSave;
 }
 
-void DocumentManager::setFileBackupEnabled(bool enabled)
-{
-    Q_D(DocumentManager);
-    
-    d->createBackupOnSave = enabled;
-}
-
-void DocumentManager::setDraftLocation(const QString &directory) 
-{
-    Q_D(DocumentManager);
-
-    QDir draftDir(directory);
-
-    if (!draftDir.exists()) {
-        draftDir.mkpath(draftDir.path());
-    }
-
-    d->draftLocation = draftDir.absolutePath();
-}
-
 void DocumentManager::setFileHistoryEnabled(bool enabled)
 {
     Q_D(DocumentManager);
     
     d->fileHistoryEnabled = enabled;
+}
+
+void DocumentManager::setAutoSaveEnabled(bool enabled)
+{
+    Q_D(DocumentManager);
+    
+    d->autoSaveEnabled = enabled;
+
+    if (enabled) {
+        emit documentModifiedChanged(false);
+    } else if (d->document->isModified()) {
+        d->document->setModified(false);
+    }
+}
+
+void DocumentManager::setFileBackupEnabled(bool enabled)
+{
+    Q_D(DocumentManager);
+    
+    d->createBackupOnSave = enabled;
 }
 
 void DocumentManager::open(const QString &filePath)
@@ -549,16 +506,14 @@ bool DocumentManager::close()
         cursor.setPosition(0);
         d->editor->setTextCursor(cursor);
 
-        d->document->clear();
+        d->document->setPlainText("");
         d->document->clearUndoRedoStacks();
-
         d->editor->setReadOnly(false);
         d->document->setReadOnly(false);
         d->setFilePath(QString());
         d->document->setModified(false);
 
-        if (d->fileHistoryEnabled && 
-                (!documentIsNew || this->autoSaveEnabled())) {
+        if (d->fileHistoryEnabled && !documentIsNew) {
             DocumentHistory history;
             history.add
             (
@@ -665,6 +620,21 @@ void DocumentManagerPrivate::onFileChangedExternally(const QString &path)
     }
 }
 
+void DocumentManagerPrivate::autoSaveFile()
+{
+    Q_Q(DocumentManager);
+
+    if
+    (
+        this->autoSaveEnabled &&
+        !this->document->isNew() &&
+        !this->document->isReadOnly() &&
+        this->document->isModified()
+    ) {
+        q->save();
+    }
+}
+
 void DocumentManagerPrivate::saveFile()
 {
     Q_Q(DocumentManager);
@@ -709,7 +679,9 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
     QFile inputFile(filePath);
 
     if (!inputFile.open(QIODevice::ReadOnly)) {
-        MessageBoxHelper::critical(editor,
+        MessageBoxHelper::critical
+        (
+            editor,
             QObject::tr("Could not read %1").arg(filePath),
             inputFile.errorString()
         );
@@ -728,14 +700,14 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
 
     document->clearUndoRedoStacks();
     document->setUndoRedoEnabled(false);
-    document->clear();
+    document->setPlainText("");
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
     emit q->operationStarted(QObject::tr("opening %1").arg(filePath));
     QTextStream inStream(&inputFile);
 
     // Markdown files need to be in UTF-8 format, so assume that is
-    // what the user is opening by default.  Enable autodetection
+    // what the user is opening by default.  Enable autodection
     // of of UTF-16 or UTF-32 BOM in case the file isn't UTF-8 encoded.
     //
     inStream.setCodec("UTF-8");
@@ -743,8 +715,16 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
 
     QString text = inStream.readAll();
 
+    editor->setPlainText(text);
+    editor->navigateDocument(0);
+    emit q->operationUpdate();
+
+    document->setUndoRedoEnabled(true);
+
     if (QFile::NoError != inputFile.error()) {
-        MessageBoxHelper::critical(editor,
+        MessageBoxHelper::critical
+        (
+            editor,
             QObject::tr("Could not read %1").arg(filePath),
             inputFile.errorString()
         );
@@ -752,13 +732,6 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
         inputFile.close();
         return false;
     }
-    
-    setFilePath(filePath);
-    editor->setPlainText(text);
-    editor->navigateDocument(0);
-    emit q->operationUpdate();
-
-    document->setUndoRedoEnabled(true);
 
     inputFile.close();
 
@@ -769,6 +742,7 @@ bool DocumentManagerPrivate::loadFile(const QString &filePath)
         editor->navigateDocument(0);
     }
 
+    setFilePath(filePath);
     editor->setReadOnly(false);
 
     if (!fileInfo.isWritable()) {
@@ -975,49 +949,4 @@ void DocumentManagerPrivate::backupFile(const QString &filePath) const
                   file.errorString().toLatin1().data());
     }
 }
-
-void DocumentManagerPrivate::autoSaveFile()
-{
-    Q_Q(DocumentManager);
-
-    if
-    (
-        this->autoSaveEnabled &&
-        !this->document->isNew() &&
-        !this->document->isReadOnly() &&
-        this->document->isModified()
-    ) {
-        q->save();
-    }
-}
-
-bool DocumentManagerPrivate::documentIsDraft()
-{
-    if (document->isNew()) {
-        return false;
-    }
-
-    QFileInfo info(document->filePath());
-
-    return ((info.dir().absolutePath() == draftLocation)
-        && (info.baseName().startsWith(draftName)));
-}
-
-void DocumentManagerPrivate::createDraft()
-{
-    if (document->isNew()) {
-        int i = 1;
-        QString draftPath;
-
-        // Make sure draft file name is unique.
-        do {
-            draftPath = draftLocation + "/" + draftName + "-" + QString::number(i) + ".md";
-            i++;
-        } while (QFileInfo(draftPath).exists());
-
-        this->setFilePath(draftPath);
-        saveFile();
-    }
-}
-
 }

@@ -39,11 +39,6 @@ SessionStatistics::~SessionStatistics()
 
 }
 
-int SessionStatistics::wordCount() const
-{
-    return sessionWordCount;
-}
-
 void SessionStatistics::startNewSession(int initialWordCount)
 {
     sessionWordCount = 0;

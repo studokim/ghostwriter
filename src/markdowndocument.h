@@ -1,6 +1,6 @@
-﻿/***********************************************************************
+/***********************************************************************
  *
- * Copyright (C) 2014-2021 wereturtle
+ * Copyright (C) 2014-2020 wereturtle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,10 @@
 #ifndef MARKUPDOCUMENT_H
 #define MARKUPDOCUMENT_H
 
-#include <QDateTime>
-#include <QScopedPointer>
-#include <QString>
-#include <QTextBlock>
 #include <QTextDocument>
-
+#include <QString>
+#include <QDateTime>
+#include <QTextBlock>
 #include "markdownast.h"
 
 namespace ghostwriter
@@ -34,11 +32,9 @@ namespace ghostwriter
  * Text document that maintains timestamp, read-only state, and new vs.
  * saved status.
  */
-class MarkdownDocumentPrivate;
 class MarkdownDocument : public QTextDocument
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(MarkdownDocument)
 
 public:
     /**
@@ -109,11 +105,6 @@ public:
      */
     void notifyTextBlockRemoved(const QTextBlock &block);
 
-    /**
-     * Overrides base class clear() method to send cleared() signal.
-     */
-    void clear();
-
 signals:
     /**
      * Emitted when the file path changes.
@@ -132,13 +123,17 @@ signals:
      */
     void textBlockRemoved(const QTextBlock &block);
 
-    /**
-     * Emitted when the contents of the document is cleared.
-     */
-    void cleared();
-
 private:
-    QScopedPointer<MarkdownDocumentPrivate> d_ptr;
+    QString m_displayName;
+    QString m_filePath;
+    bool readOnlyFlag;
+    QDateTime m_timestamp;
+    MarkdownAST *ast;
+
+    /*
+    * Initializes the class for an untitled document.
+    */
+    void initializeUntitledDocument();
 };
 } // namespace ghostwriter
 
