@@ -34,7 +34,6 @@
 #include "documentstatisticswidget.h"
 #include "findreplace.h"
 #include "htmlpreview.h"
-#include "mainwindow.h"
 #include "outlinewidget.h"
 #include "sessionstatistics.h"
 #include "sessionstatisticswidget.h"
@@ -52,7 +51,7 @@ namespace ghostwriter
     /**
  * Main window for the application.
  */
-    class MainWindow : public QMainWindow
+0    class MainWindow : public QMainWindow
     {
         Q_OBJECT
 
