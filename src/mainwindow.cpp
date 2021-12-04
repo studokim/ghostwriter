@@ -140,7 +140,7 @@ namespace ghostwriter
         editor->setAutoMatchEnabled('`', appSettings->autoMatchCharEnabled('`'));
         editor->setAutoMatchEnabled('<', appSettings->autoMatchCharEnabled('<'));
 
-        QWidget *editorPane = new QWidget(this);
+        editorPane = new QWidget(this);
         editorPane->setObjectName("editorLayoutArea");
         editorPane->setLayout(editor->preferredLayout());
 
@@ -322,13 +322,6 @@ namespace ghostwriter
 
         htmlPreview->setMinimumWidth(0);
         htmlPreview->setObjectName("htmlpreview");
-        htmlPreview->setVisible(appSettings->htmlPreviewVisible());
-
-        previewSplitter = new QSplitter(this);
-        previewSplitter->addWidget(editorPane);
-        previewSplitter->addWidget(htmlPreview);
-        previewSplitter->setCollapsible(0, true);
-        previewSplitter->setCollapsible(1, true);
 
         this->findReplace = new FindReplace(this->editor, this);
         statusBarWidgets.append(this->findReplace);
@@ -337,12 +330,13 @@ namespace ghostwriter
         buildMenuBar();
         buildStatusBar();
 
-        QVBoxLayout *mainLayout = new QVBoxLayout();
-        QWidget *mainPane = new QWidget(this);
+        QGridLayout *mainLayout = new QGridLayout();
+        mainPane = new QWidget(this);
         mainPane->setLayout(mainLayout);
-        mainLayout->addWidget(previewSplitter, 500);
-        mainLayout->setSpacing(0);
+        mainLayout->addWidget(editorPane);
+        mainLayout->addWidget(htmlPreview);
         mainLayout->setMargin(0);
+        mainLayout->setSpacing(0);
 
         sidebarSplitter = new QSplitter(this);
         sidebarSplitter->addWidget(sidebar);
@@ -378,6 +372,7 @@ namespace ghostwriter
                 tr("Could not create file %1. Check permissions.").arg(filePath));
         }
 
+        toggleHtmlPreview(appSettings->htmlPreviewVisible());
         toggleHideMenuBarInFullScreen(appSettings->hideMenuBarInFullScreenEnabled());
         menuBarMenuActivated = false;
 
@@ -530,17 +525,25 @@ namespace ghostwriter
 
     void MainWindow::toggleHtmlPreview(bool checked)
     {
-        QList<int> splitterSizes;
-
         htmlPreviewMenuAction->blockSignals(true);
 
         htmlPreviewMenuAction->setChecked(checked);
-        htmlPreview->setVisible(checked);
         htmlPreview->updatePreview();
         adjustEditorWidth(this->width());
+        switchEditorToPreview(checked);
 
         htmlPreviewMenuAction->blockSignals(false);
         appSettings->setHtmlPreviewVisible(checked);
+    }
+
+    void MainWindow::switchEditorToPreview(bool preview)
+    {
+        htmlPreview->setVisible(preview);
+        editorPane->setVisible(!preview);
+        if (preview)
+            htmlPreview->setFocus();
+        else
+            editor->setFocus();
     }
 
     void MainWindow::toggleHemingwayMode(bool checked)
@@ -974,7 +977,10 @@ namespace ghostwriter
 
         if (!visible)
         {
-            editor->setFocus();
+            if (htmlPreview->isVisible())
+                htmlPreview->setFocus();
+            else
+                editor->setFocus();
         }
     }
 
@@ -1542,7 +1548,6 @@ namespace ghostwriter
     void MainWindow::adjustEditorWidth(int width)
     {
         QList<int> sidebarSplitterSizes;
-        QList<int> previewSplitterSizes;
         int editorWidth = width;
 
         if (width < (0.5 * qApp->primaryScreen()->size().width()))
@@ -1561,18 +1566,11 @@ namespace ghostwriter
 
         sidebarSplitterSizes.append(editorWidth);
 
-        if (htmlPreview->isVisible())
-        {
-            editorWidth /= 2;
-            previewSplitterSizes.append(editorWidth);
-        }
-
-        previewSplitterSizes.append(editorWidth);
-        previewSplitter->setSizes(previewSplitterSizes);
         sidebarSplitter->setSizes(sidebarSplitterSizes);
 
         // Resize the editor's margins based on the size of the window.
         editor->setupPaperMargins();
+        htmlPreview->setupMargins();
 
         // Scroll to cursor position.
         editor->centerCursor();
@@ -1606,7 +1604,6 @@ namespace ghostwriter
         //
         qApp->setStyleSheet(styler.layoutStyleSheet());
 
-        previewSplitter->setStyleSheet(styler.splitterStyleSheet());
         sidebarSplitter->setStyleSheet(styler.splitterStyleSheet());
         this->statusBar()->setStyleSheet(styler.statusBarStyleSheet());
 
@@ -1633,6 +1630,7 @@ namespace ghostwriter
 
         statisticsIndicator->setStyleSheet("color: " + styler.interfaceTextColor().name() + "; background-color: " + styler.faintColor().name());
         dictionaryIndicator->setStyleSheet("color: " + styler.interfaceTextColor().name() + "; background-color: " + styler.faintColor().name());
+        mainPane->setStyleSheet("background-color: " + styler.backgroundColor().name());
 
         adjustEditorWidth(this->width());
     }

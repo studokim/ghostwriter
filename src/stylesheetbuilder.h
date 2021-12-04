@@ -108,6 +108,7 @@ public:
      * Gets the faint text color derived from the color scheme.
      */
     QColor faintColor();
+    QColor backgroundColor();
 
 private:
     QColor m_backgroundColor;
