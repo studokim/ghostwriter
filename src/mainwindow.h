@@ -105,7 +105,6 @@ namespace ghostwriter
         QtAwesome *awesome;
         MarkdownEditor *editor;
         FindReplace *findReplace;
-        QSplitter *previewSplitter;
         QSplitter *sidebarSplitter;
         DocumentManager *documentManager;
         ThemeRepository *themeRepo;
@@ -125,6 +124,8 @@ namespace ghostwriter
         QPushButton *focusModeButton;
         QPushButton *htmlPreviewButton;
         HtmlPreview *htmlPreview;
+        QWidget *editorPane;
+        QWidget *mainPane;
         QAction *htmlPreviewMenuAction;
         QAction *fullScreenMenuAction;
         QPushButton *fullScreenButton;
@@ -160,6 +161,7 @@ namespace ghostwriter
         void buildSidebar();
 
         void adjustEditorWidth(int width);
+        void switchEditorToPreview(bool preview);
     };
 } // namespace ghostwriter
 

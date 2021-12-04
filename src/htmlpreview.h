@@ -60,6 +60,7 @@ public:
      * Customize QtWebEngine context menu.
      */
     void contextMenuEvent(QContextMenuEvent *event);
+    void setupMargins();
 
 public slots:
     /**
