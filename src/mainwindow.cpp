@@ -140,7 +140,7 @@ namespace ghostwriter
         editor->setAutoMatchEnabled('`', appSettings->autoMatchCharEnabled('`'));
         editor->setAutoMatchEnabled('<', appSettings->autoMatchCharEnabled('<'));
 
-        QWidget *editorPane = new QWidget(this);
+        editorPane = new QWidget(this);
         editorPane->setObjectName("editorLayoutArea");
         editorPane->setLayout(editor->preferredLayout());
 
@@ -360,7 +360,7 @@ namespace ghostwriter
         // the theme is applied before show().
         //
         applyTheme();
-        adjustEditorWidth(this->width());
+        toggleHtmlPreview(appSettings->htmlPreviewVisible());
 
         this->update();
         qApp->processEvents();
@@ -535,7 +535,12 @@ namespace ghostwriter
         htmlPreviewMenuAction->blockSignals(true);
 
         htmlPreviewMenuAction->setChecked(checked);
+        editorPane->setVisible(!checked);
         htmlPreview->setVisible(checked);
+        if (checked)
+            htmlPreview->setFocus();
+        else
+            editor->setFocus();
         htmlPreview->updatePreview();
         adjustEditorWidth(this->width());
 
@@ -974,7 +979,10 @@ namespace ghostwriter
 
         if (!visible)
         {
-            editor->setFocus();
+            if (htmlPreview->isVisible())
+                htmlPreview->setFocus();
+            else
+                editor->setFocus();
         }
     }
 
