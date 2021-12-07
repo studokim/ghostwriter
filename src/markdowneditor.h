@@ -261,6 +261,7 @@ public slots:
      * Formats current line or selected lines as a task list.
      */
     void toggleTaskList();
+    void removeTaskList();
 
     /**
      * Formats current line or selected lines as a block quote.

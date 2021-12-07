@@ -151,7 +151,7 @@ public:
 
     void handleCarriageReturn();
     bool handleBackspaceKey();
-    void insertPrefixForBlocks(const QString &prefix);
+    void insertPrefixForBlocks(const QString &prefix, int startPosition=0);
     void createNumberedList(const QChar marker);
     bool insertPairedCharacters(const QChar firstChar);
     bool handleEndPairCharacterTyped(const QChar ch);
@@ -1054,16 +1054,13 @@ void MarkdownEditor::toggleBulletListWithMinusMarker()
         block = cursor.block();
     }
 
-    QRegularExpressionMatch match;
-    
-    if (block.text().indexOf(d->numberedListRegex, 0, &match) == 0)
-    {
-        removeNumberedListWithPeriodMarker();
-    }
+    removeTaskList();
+    removeNumberedListWithPeriodMarker();
 
-    if (block.text().indexOf(d->bulletListRegex, 0, &match) == -1)
+    if (block.text().indexOf("- ", 0) == -1)
     {
-        d->insertPrefixForBlocks("- ");
+        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
+        d->insertPrefixForBlocks("- ", firstNotWhitespacePosition);
     }
     else
     {
@@ -1089,7 +1086,7 @@ void MarkdownEditor::removeBulletListWithMinusMarker()
     }
 
     cursor.beginEditBlock();
-    cursor.setPosition(block.position());
+    cursor.setPosition(block.position() + block.text().indexOf("- ", 0));
 
     if (this->document()->characterAt(cursor.position()) == '-'
         && this->document()->characterAt(cursor.position() + 1).isSpace())
@@ -1124,16 +1121,13 @@ void MarkdownEditor::toggleNumberedListWithPeriodMarker()
         block = cursor.block();
     }
 
-    QRegularExpressionMatch match;
+    removeTaskList();
+    removeBulletListWithMinusMarker();
 
-    if (block.text().indexOf(d->bulletListRegex, 0, &match) == 0)
+    if (block.text().indexOf("1. ", 0) == -1)
     {
-        removeBulletListWithMinusMarker();
-    }
-
-    if (block.text().indexOf(d->numberedListRegex, 0, &match) == -1)
-    {
-        d->createNumberedList('.');
+        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
+        d->insertPrefixForBlocks("1. ", firstNotWhitespacePosition);
     }
     else
     {
@@ -1166,7 +1160,7 @@ void MarkdownEditor::removeNumberedListWithPeriodMarker()
     }
 
     cursor.beginEditBlock();
-    cursor.setPosition(block.position());
+    cursor.setPosition(block.position() + block.text().indexOf("1. ", 0));
 
     if ((this->document()->characterAt(cursor.position()) == '1')
         && this->document()->characterAt(cursor.position() + 1) == '.'
@@ -1186,34 +1180,70 @@ void MarkdownEditor::toggleTaskList()
 
     QTextCursor cursor = textCursor();
     QTextBlock block;
-    QTextBlock end;
 
     if (cursor.hasSelection())
     {
         block = this->document()->findBlock(cursor.selectionStart());
-        end = this->document()->findBlock(cursor.selectionEnd()).next();
     }
     else
     {
         block = cursor.block();
-        end = block.next();
+    }
+
+    removeBulletListWithMinusMarker();
+    removeNumberedListWithPeriodMarker();
+
+    cursor.beginEditBlock();
+
+    // .indexOf(regexp, 0) returns only 0 or -1 because of ^ char, so use QString
+    int startPosition = std::max(block.text().indexOf("- [ ]", 0), block.text().indexOf("- [x]", 0));
+    if (startPosition == -1)
+    {
+        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
+        d->insertPrefixForBlocks("- [ ] ", firstNotWhitespacePosition);
+    }
+    else
+    {
+        removeTaskList();
+    }
+
+    cursor.endEditBlock();
+}
+
+void MarkdownEditor::removeTaskList()
+{
+    Q_D(MarkdownEditor);
+
+    QTextCursor cursor = this->textCursor();
+    QTextBlock block;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+    }
+    else
+    {
+        block = cursor.block();
     }
 
     cursor.beginEditBlock();
 
-    QRegularExpressionMatch match;
-
-    if (block.text().indexOf(d->taskListRegex, 0, &match) == -1)
+    // .indexOf(regexp, 0) returns only 0 or -1 because of ^ char, so use QString
+    cursor.setPosition(block.position() + block.text().indexOf("- [", 0));
+    
+    if (this->document()->characterAt(cursor.position()) == '-'
+        && this->document()->characterAt(cursor.position() + 1).isSpace()
+        && this->document()->characterAt(cursor.position() + 2) == '['
+        && this->document()->characterAt(cursor.position() + 4) == ']'
+        && this->document()->characterAt(cursor.position() + 5).isSpace())
     {
-        d->insertPrefixForBlocks("- [ ] ");
-    }
-    else
-    {
-        cursor.setPosition(block.position());
-        cursor.movePosition(QTextCursor::StartOfBlock);
+        cursor.deleteChar();
+        cursor.deleteChar();
+        cursor.deleteChar();
 
-        for (int i = 0; i < 6; ++i)
-            cursor.deleteChar();
+        cursor.deleteChar();
+        cursor.deleteChar();
+        cursor.deleteChar();
     }
 
     cursor.endEditBlock();
@@ -2088,7 +2118,7 @@ bool MarkdownEditorPrivate::handleBackspaceKey()
 }
 
 // Algorithm lifted from ReText.
-void MarkdownEditorPrivate::insertPrefixForBlocks(const QString &prefix)
+void MarkdownEditorPrivate::insertPrefixForBlocks(const QString &prefix, int startPosition)
 {
     Q_Q(MarkdownEditor);
     
@@ -2107,7 +2137,7 @@ void MarkdownEditorPrivate::insertPrefixForBlocks(const QString &prefix)
     cursor.beginEditBlock();
 
     while (block != end) {
-        cursor.setPosition(block.position());
+        cursor.setPosition(block.position() + startPosition);
         cursor.insertText(prefix);
         block = block.next();
     }
