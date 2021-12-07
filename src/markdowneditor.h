@@ -223,6 +223,7 @@ public slots:
      * Inserts an HTML comment.
      */
     void insertComment();
+    void insertLink();
 
     /**
      * Formats current line or selected lines as a bullet point
@@ -234,7 +235,8 @@ public slots:
      * Formats current line or selected lines as a bullet point
      * list with the minus (-) marker.
      */
-    void createBulletListWithMinusMarker();
+    void toggleBulletListWithMinusMarker();
+    void removeBulletListWithMinusMarker();
 
     /**
      * Formats current line or selected lines as a bullet point
@@ -246,7 +248,8 @@ public slots:
      * Formats current line or selected lines as a numbered
      * list with the period (.) marker.
      */
-    void createNumberedListWithPeriodMarker();
+    void toggleNumberedListWithPeriodMarker();
+    void removeNumberedListWithPeriodMarker();
 
     /**
      * Formats current line or selected lines as a numbered
@@ -257,7 +260,7 @@ public slots:
     /**
      * Formats current line or selected lines as a task list.
      */
-    void createTaskList();
+    void toggleTaskList();
 
     /**
      * Formats current line or selected lines as a block quote.

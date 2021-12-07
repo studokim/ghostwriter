@@ -1011,6 +1011,26 @@ void MarkdownEditor::insertComment()
     }
 }
 
+void MarkdownEditor::insertLink()
+{
+    QTextCursor cursor = this->textCursor();
+
+    if (cursor.hasSelection())
+    {
+        QString text = cursor.selectedText();
+        text = QString("[" + text + "]()");
+        cursor.insertText(text);
+        cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor, 1);
+        this->setTextCursor(cursor);
+    }
+    else
+    {
+        cursor.insertText("[]()");
+        cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor, 1);
+        this->setTextCursor(cursor);
+    }
+}
+
 void MarkdownEditor::createBulletListWithAsteriskMarker()
 {
     Q_D(MarkdownEditor);
@@ -1018,11 +1038,67 @@ void MarkdownEditor::createBulletListWithAsteriskMarker()
     d->insertPrefixForBlocks("* ");
 }
 
-void MarkdownEditor::createBulletListWithMinusMarker()
+void MarkdownEditor::toggleBulletListWithMinusMarker()
 {
     Q_D(MarkdownEditor);
+
+    QTextCursor cursor = textCursor();
+    QTextBlock block;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+    }
+    else
+    {
+        block = cursor.block();
+    }
+
+    QRegularExpressionMatch match;
     
-    d->insertPrefixForBlocks("- ");
+    if (block.text().indexOf(d->numberedListRegex, 0, &match) == 0)
+    {
+        removeNumberedListWithPeriodMarker();
+    }
+
+    if (block.text().indexOf(d->bulletListRegex, 0, &match) == -1)
+    {
+        d->insertPrefixForBlocks("- ");
+    }
+    else
+    {
+        removeBulletListWithMinusMarker();
+    }
+}
+
+void MarkdownEditor::removeBulletListWithMinusMarker()
+{
+    QTextCursor cursor = this->textCursor();
+    QTextBlock block;
+    QTextBlock end;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+        end = this->document()->findBlock(cursor.selectionEnd()).next();
+    }
+    else
+    {
+        block = cursor.block();
+        end = block.next();
+    }
+
+    cursor.beginEditBlock();
+    cursor.setPosition(block.position());
+
+    if (this->document()->characterAt(cursor.position()) == '-'
+        && this->document()->characterAt(cursor.position() + 1).isSpace())
+    {
+        cursor.deleteChar();
+        cursor.deleteChar();
+    }
+
+    cursor.endEditBlock();
 }
 
 void MarkdownEditor::createBulletListWithPlusMarker()
@@ -1032,11 +1108,37 @@ void MarkdownEditor::createBulletListWithPlusMarker()
     d->insertPrefixForBlocks("+ ");
 }
 
-void MarkdownEditor::createNumberedListWithPeriodMarker()
+void MarkdownEditor::toggleNumberedListWithPeriodMarker()
 {
     Q_D(MarkdownEditor);
-    
-    d->createNumberedList('.');
+
+    QTextCursor cursor = textCursor();
+    QTextBlock block;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+    }
+    else
+    {
+        block = cursor.block();
+    }
+
+    QRegularExpressionMatch match;
+
+    if (block.text().indexOf(d->bulletListRegex, 0, &match) == 0)
+    {
+        removeBulletListWithMinusMarker();
+    }
+
+    if (block.text().indexOf(d->numberedListRegex, 0, &match) == -1)
+    {
+        d->createNumberedList('.');
+    }
+    else
+    {
+        removeNumberedListWithPeriodMarker();
+    }
 }
 
 void MarkdownEditor::createNumberedListWithParenthesisMarker()
@@ -1046,11 +1148,75 @@ void MarkdownEditor::createNumberedListWithParenthesisMarker()
     d->createNumberedList(')');
 }
 
-void MarkdownEditor::createTaskList()
+void MarkdownEditor::removeNumberedListWithPeriodMarker()
+{
+    QTextCursor cursor = this->textCursor();
+    QTextBlock block;
+    QTextBlock end;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+        end = this->document()->findBlock(cursor.selectionEnd()).next();
+    }
+    else
+    {
+        block = cursor.block();
+        end = block.next();
+    }
+
+    cursor.beginEditBlock();
+    cursor.setPosition(block.position());
+
+    if ((this->document()->characterAt(cursor.position()) == '1')
+        && this->document()->characterAt(cursor.position() + 1) == '.'
+        && this->document()->characterAt(cursor.position() + 2).isSpace())
+    {
+        cursor.deleteChar();
+        cursor.deleteChar();
+        cursor.deleteChar();
+    }
+
+    cursor.endEditBlock();
+}
+
+void MarkdownEditor::toggleTaskList()
 {
     Q_D(MarkdownEditor);
-    
-    d->insertPrefixForBlocks("- [ ] ");
+
+    QTextCursor cursor = textCursor();
+    QTextBlock block;
+    QTextBlock end;
+
+    if (cursor.hasSelection())
+    {
+        block = this->document()->findBlock(cursor.selectionStart());
+        end = this->document()->findBlock(cursor.selectionEnd()).next();
+    }
+    else
+    {
+        block = cursor.block();
+        end = block.next();
+    }
+
+    cursor.beginEditBlock();
+
+    QRegularExpressionMatch match;
+
+    if (block.text().indexOf(d->taskListRegex, 0, &match) == -1)
+    {
+        d->insertPrefixForBlocks("- [ ] ");
+    }
+    else
+    {
+        cursor.setPosition(block.position());
+        cursor.movePosition(QTextCursor::StartOfBlock);
+
+        for (int i = 0; i < 6; ++i)
+            cursor.deleteChar();
+    }
+
+    cursor.endEditBlock();
 }
 
 void MarkdownEditor::createBlockquote()
