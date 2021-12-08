@@ -1015,16 +1015,13 @@ void MarkdownEditor::insertLink()
 {
     QTextCursor cursor = this->textCursor();
 
-    if (cursor.hasSelection())
-    {
+    if (cursor.hasSelection()) {
         QString text = cursor.selectedText();
         text = QString("[" + text + "]()");
         cursor.insertText(text);
         cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor, 1);
         this->setTextCursor(cursor);
-    }
-    else
-    {
+    } else {
         cursor.insertText("[]()");
         cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::MoveAnchor, 1);
         this->setTextCursor(cursor);
@@ -1039,57 +1036,58 @@ void MarkdownEditor::createBulletListWithAsteriskMarker()
 }
 
 void MarkdownEditor::toggleBulletListWithMinusMarker()
-{
+{    
     Q_D(MarkdownEditor);
-
     QTextCursor cursor = textCursor();
     QTextBlock block;
-
-    if (cursor.hasSelection())
-    {
-        block = this->document()->findBlock(cursor.selectionStart());
-    }
-    else
-    {
-        block = cursor.block();
-    }
-
-    removeTaskList();
-    removeNumberedListWithPeriodMarker();
-
-    if (block.text().indexOf("- ", 0) == -1)
-    {
-        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
-        d->insertPrefixForBlocks("- ", firstNotWhitespacePosition);
-    }
-    else
-    {
-        removeBulletListWithMinusMarker();
-    }
-}
-
-void MarkdownEditor::removeBulletListWithMinusMarker()
-{
-    QTextCursor cursor = this->textCursor();
-    QTextBlock block;
     QTextBlock end;
-
-    if (cursor.hasSelection())
-    {
+    
+    if (cursor.hasSelection()) {
         block = this->document()->findBlock(cursor.selectionStart());
         end = this->document()->findBlock(cursor.selectionEnd()).next();
-    }
-    else
-    {
+    } else {
         block = cursor.block();
         end = block.next();
     }
 
     cursor.beginEditBlock();
-    cursor.setPosition(block.position() + block.text().indexOf("- ", 0));
 
-    if (this->document()->characterAt(cursor.position()) == '-'
-        && this->document()->characterAt(cursor.position() + 1).isSpace())
+    while (block != end) {
+        cursor.setPosition(block.position());
+
+        // interfere with bulletList if placed inside if
+        removeTaskList(block);
+
+        if (block.text().indexOf(d->bulletListRegex, 0) == -1)
+        {
+            removeNumberedListWithPeriodMarker(block);
+            int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+            cursor.setPosition(block.position() + firstNotWhitespacePosition);
+            cursor.insertText("- ");
+        }
+        else
+        {
+            removeBulletListWithMinusMarker(block);
+        }
+        
+        block = block.next();
+    }
+
+    cursor.endEditBlock();
+}
+
+void MarkdownEditor::removeBulletListWithMinusMarker(const QTextBlock &block)
+{
+    Q_D(MarkdownEditor);
+
+    QTextCursor cursor = this->textCursor();
+
+    cursor.beginEditBlock();
+
+    int startPosition = block.text().indexOf(d->bulletListRegex, 0);
+    cursor.setPosition(block.position() + startPosition);
+    
+    if (startPosition != -1)
     {
         cursor.deleteChar();
         cursor.deleteChar();
@@ -1108,31 +1106,43 @@ void MarkdownEditor::createBulletListWithPlusMarker()
 void MarkdownEditor::toggleNumberedListWithPeriodMarker()
 {
     Q_D(MarkdownEditor);
-
     QTextCursor cursor = textCursor();
     QTextBlock block;
+    QTextBlock end;
 
-    if (cursor.hasSelection())
-    {
+    if (cursor.hasSelection()) {
         block = this->document()->findBlock(cursor.selectionStart());
-    }
-    else
-    {
+        end = this->document()->findBlock(cursor.selectionEnd()).next();
+    } else {
         block = cursor.block();
+        end = block.next();
     }
 
-    removeTaskList();
-    removeBulletListWithMinusMarker();
+    int number = 1;
 
-    if (block.text().indexOf("1. ", 0) == -1)
-    {
-        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
-        d->insertPrefixForBlocks("1. ", firstNotWhitespacePosition);
+    cursor.beginEditBlock();
+
+    while (block != end) {
+        cursor.setPosition(block.position());
+
+        if (block.text().indexOf(d->numberedListRegex, 0) == -1)
+        {
+            removeTaskList(block);
+            removeBulletListWithMinusMarker(block);
+            int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+            cursor.setPosition(block.position() + firstNotWhitespacePosition);
+            cursor.insertText(QString("%1").arg(number) + ". ");
+            number++;
+        }
+        else
+        {
+            removeNumberedListWithPeriodMarker(block);
+        }
+            
+        block = block.next();
     }
-    else
-    {
-        removeNumberedListWithPeriodMarker();
-    }
+
+    cursor.endEditBlock();
 }
 
 void MarkdownEditor::createNumberedListWithParenthesisMarker()
@@ -1142,29 +1152,18 @@ void MarkdownEditor::createNumberedListWithParenthesisMarker()
     d->createNumberedList(')');
 }
 
-void MarkdownEditor::removeNumberedListWithPeriodMarker()
+void MarkdownEditor::removeNumberedListWithPeriodMarker(const QTextBlock &block)
 {
+    Q_D(MarkdownEditor);
+
     QTextCursor cursor = this->textCursor();
-    QTextBlock block;
-    QTextBlock end;
-
-    if (cursor.hasSelection())
-    {
-        block = this->document()->findBlock(cursor.selectionStart());
-        end = this->document()->findBlock(cursor.selectionEnd()).next();
-    }
-    else
-    {
-        block = cursor.block();
-        end = block.next();
-    }
-
+    
     cursor.beginEditBlock();
-    cursor.setPosition(block.position() + block.text().indexOf("1. ", 0));
 
-    if ((this->document()->characterAt(cursor.position()) == '1')
-        && this->document()->characterAt(cursor.position() + 1) == '.'
-        && this->document()->characterAt(cursor.position() + 2).isSpace())
+    int startPosition = block.text().indexOf(d->numberedListRegex, 0);
+    cursor.setPosition(block.position() + startPosition);
+    
+    if (startPosition != -1)
     {
         cursor.deleteChar();
         cursor.deleteChar();
@@ -1177,65 +1176,53 @@ void MarkdownEditor::removeNumberedListWithPeriodMarker()
 void MarkdownEditor::toggleTaskList()
 {
     Q_D(MarkdownEditor);
-
     QTextCursor cursor = textCursor();
     QTextBlock block;
+    QTextBlock end;
 
-    if (cursor.hasSelection())
-    {
+    if (cursor.hasSelection()) {
         block = this->document()->findBlock(cursor.selectionStart());
-    }
-    else
-    {
+        end = this->document()->findBlock(cursor.selectionEnd()).next();
+    } else {
         block = cursor.block();
+        end = block.next();
     }
-
-    removeBulletListWithMinusMarker();
-    removeNumberedListWithPeriodMarker();
 
     cursor.beginEditBlock();
 
-    // .indexOf(regexp, 0) returns only 0 or -1 because of ^ char, so use QString
-    int startPosition = std::max(block.text().indexOf("- [ ]", 0), block.text().indexOf("- [x]", 0));
-    if (startPosition == -1)
-    {
-        int firstNotWhitespacePosition = block.text().indexOf(QRegularExpression("\\S"), 0);
-        d->insertPrefixForBlocks("- [ ] ", firstNotWhitespacePosition);
-    }
-    else
-    {
-        removeTaskList();
+    while (block != end) {
+        cursor.setPosition(block.position());
+
+        if (block.text().indexOf(d->taskListRegex, 0) == -1)
+        {
+            removeBulletListWithMinusMarker(block);
+            removeNumberedListWithPeriodMarker(block);
+            int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+            cursor.setPosition(block.position() + firstNotWhitespacePosition);
+            cursor.insertText("- [ ] ");
+        }
+        else
+        {
+            removeTaskList(block);
+        }
+        
+        block = block.next();
     }
 
     cursor.endEditBlock();
 }
 
-void MarkdownEditor::removeTaskList()
+void MarkdownEditor::removeTaskList(const QTextBlock &block)
 {
     Q_D(MarkdownEditor);
-
     QTextCursor cursor = this->textCursor();
-    QTextBlock block;
-
-    if (cursor.hasSelection())
-    {
-        block = this->document()->findBlock(cursor.selectionStart());
-    }
-    else
-    {
-        block = cursor.block();
-    }
-
+    
     cursor.beginEditBlock();
 
-    // .indexOf(regexp, 0) returns only 0 or -1 because of ^ char, so use QString
-    cursor.setPosition(block.position() + block.text().indexOf("- [", 0));
+    int startPosition = block.text().indexOf(d->taskListRegex, 0);
+    cursor.setPosition(block.position() + startPosition);
     
-    if (this->document()->characterAt(cursor.position()) == '-'
-        && this->document()->characterAt(cursor.position() + 1).isSpace()
-        && this->document()->characterAt(cursor.position() + 2) == '['
-        && this->document()->characterAt(cursor.position() + 4) == ']'
-        && this->document()->characterAt(cursor.position() + 5).isSpace())
+    if (startPosition != -1)
     {
         cursor.deleteChar();
         cursor.deleteChar();
@@ -1259,6 +1246,8 @@ void MarkdownEditor::createBlockquote()
 // Algorithm lifted from ReText.
 void MarkdownEditor::removeBlockquote()
 {
+    Q_D(MarkdownEditor);
+
     QTextCursor cursor = this->textCursor();
     QTextBlock block;
     QTextBlock end;
@@ -1273,10 +1262,21 @@ void MarkdownEditor::removeBlockquote()
 
     cursor.beginEditBlock();
 
-    while (block != end) {
+    while (block != end) {        
         cursor.setPosition(block.position());
 
         if (this->document()->characterAt(cursor.position()) == '>') {
+            // prevent app freezing in infinite while
+            // when trying to deleteChar in empty_line between lines:
+            // > line_1
+            // >empty_line (without whitespace after >)
+            // > line_2
+            //
+            if (cursor.position() + 2 == block.next().position()) {
+                cursor.setPosition(cursor.position() + 1);
+                cursor.insertText(" ");
+                cursor.setPosition(cursor.position() - 2);
+            }
             cursor.deleteChar();
 
             // Delete first space that follow the '>' character, to clean up the
@@ -1286,7 +1286,7 @@ void MarkdownEditor::removeBlockquote()
                 cursor.deleteChar();
             }
         }
-
+        
         block = block.next();
     }
 

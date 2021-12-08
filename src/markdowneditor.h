@@ -236,7 +236,7 @@ public slots:
      * list with the minus (-) marker.
      */
     void toggleBulletListWithMinusMarker();
-    void removeBulletListWithMinusMarker();
+    void removeBulletListWithMinusMarker(const QTextBlock &block);
 
     /**
      * Formats current line or selected lines as a bullet point
@@ -249,7 +249,7 @@ public slots:
      * list with the period (.) marker.
      */
     void toggleNumberedListWithPeriodMarker();
-    void removeNumberedListWithPeriodMarker();
+    void removeNumberedListWithPeriodMarker(const QTextBlock &block);
 
     /**
      * Formats current line or selected lines as a numbered
@@ -261,7 +261,7 @@ public slots:
      * Formats current line or selected lines as a task list.
      */
     void toggleTaskList();
-    void removeTaskList();
+    void removeTaskList(const QTextBlock &block);
 
     /**
      * Formats current line or selected lines as a block quote.
