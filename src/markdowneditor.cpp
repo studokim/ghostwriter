@@ -1085,10 +1085,12 @@ void MarkdownEditor::removeBulletListWithMinusMarker(const QTextBlock &block)
     cursor.beginEditBlock();
 
     int startPosition = block.text().indexOf(d->bulletListRegex, 0);
-    cursor.setPosition(block.position() + startPosition);
     
     if (startPosition != -1)
     {
+        int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+        cursor.setPosition(block.position() + firstNotWhitespacePosition);
+
         cursor.deleteChar();
         cursor.deleteChar();
     }
@@ -1119,23 +1121,29 @@ void MarkdownEditor::toggleNumberedListWithPeriodMarker()
     }
 
     int number = 1;
+    int lastFNWSP = 0;
+    std::map<int, int> numberOnIndent {};
 
     cursor.beginEditBlock();
 
     while (block != end) {
         cursor.setPosition(block.position());
 
-        if (block.text().indexOf(d->numberedListRegex, 0) == -1)
-        {
+        if (block.text().indexOf(d->numberedListRegex, 0) == -1) {
             removeTaskList(block);
             removeBulletListWithMinusMarker(block);
+            
             int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+            if (firstNotWhitespacePosition > lastFNWSP
+                || numberOnIndent[firstNotWhitespacePosition] == 0) {
+                numberOnIndent[firstNotWhitespacePosition] = 1;
+            }
             cursor.setPosition(block.position() + firstNotWhitespacePosition);
-            cursor.insertText(QString("%1").arg(number) + ". ");
-            number++;
-        }
-        else
-        {
+            cursor.insertText(QString("%1").arg(numberOnIndent[firstNotWhitespacePosition]) + ". ");
+            
+            lastFNWSP = firstNotWhitespacePosition;
+            numberOnIndent[firstNotWhitespacePosition]++;
+        } else {
             removeNumberedListWithPeriodMarker(block);
         }
             
@@ -1161,10 +1169,12 @@ void MarkdownEditor::removeNumberedListWithPeriodMarker(const QTextBlock &block)
     cursor.beginEditBlock();
 
     int startPosition = block.text().indexOf(d->numberedListRegex, 0);
-    cursor.setPosition(block.position() + startPosition);
     
     if (startPosition != -1)
     {
+        int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+        cursor.setPosition(block.position() + firstNotWhitespacePosition);
+
         cursor.deleteChar();
         cursor.deleteChar();
         cursor.deleteChar();
@@ -1220,10 +1230,12 @@ void MarkdownEditor::removeTaskList(const QTextBlock &block)
     cursor.beginEditBlock();
 
     int startPosition = block.text().indexOf(d->taskListRegex, 0);
-    cursor.setPosition(block.position() + startPosition);
     
     if (startPosition != -1)
     {
+        int firstNotWhitespacePosition = std::max(0, block.text().indexOf(QRegularExpression("\\S"), 0));
+        cursor.setPosition(block.position() + firstNotWhitespacePosition);
+
         cursor.deleteChar();
         cursor.deleteChar();
         cursor.deleteChar();
