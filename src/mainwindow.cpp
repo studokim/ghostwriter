@@ -1003,7 +1003,7 @@ void MainWindow::buildMenuBar()
     fileMenu->addAction(createWindowAction(tr("R&ename..."), documentManager, SLOT(rename())));
     fileMenu->addAction(createWindowAction(tr("Re&load from Disk..."), documentManager, SLOT(reload())));
     fileMenu->addSeparator();
-    fileMenu->addAction(createWindowAction(tr("&Export"), documentManager, SLOT(exportFile()), QKeySequence("CTRL+E")));
+    fileMenu->addAction(createWindowAction(tr("&Export"), documentManager, SLOT(exportFile()), QKeySequence("CTRL+P")));
     fileMenu->addSeparator();
     QAction *quitAction = createWindowAction(tr("&Quit"), this, SLOT(quitApplication()), QKeySequence::Quit);
     quitAction->setMenuRole(QAction::QuitRole);
@@ -1018,11 +1018,12 @@ void MainWindow::buildMenuBar()
     editMenu->addAction(createWidgetAction(tr("&Paste"), editor, SLOT(paste()), QKeySequence::Paste));
     editMenu->addAction(createWidgetAction(tr("Copy &HTML"), this, SLOT(copyHtml()), QKeySequence("SHIFT+CTRL+C")));
     editMenu->addSeparator();
-    editMenu->addAction(createWidgetAction(tr("&Insert Image..."), this, SLOT(insertImage())));
+    editMenu->addAction(createWidgetAction(tr("&Insert Image..."), this, SLOT(insertImage()), QKeySequence("Ctrl+M")));
+    editMenu->addAction(createWidgetAction(tr("&Insert Link..."), editor, SLOT(insertLink()), QKeySequence("Ctrl+K")));
     editMenu->addSeparator();
 
     editMenu->addAction(createWindowAction(tr("&Find"), findReplace, SLOT(showFindView()), QKeySequence::Find));
-    editMenu->addAction(createWindowAction(tr("Rep&lace"), findReplace, SLOT(showReplaceView()), QKeySequence::Replace));
+    editMenu->addAction(createWindowAction(tr("Rep&lace"), findReplace, SLOT(showReplaceView()), QKeySequence("Ctrl+H")));
     editMenu->addAction(createWindowAction(tr("Find &Next"), findReplace, SLOT(findNext()), QKeySequence::FindNext));
     editMenu->addAction(createWindowAction(tr("Find &Previous"), findReplace, SLOT(findPrevious()), QKeySequence::FindPrevious));
     editMenu->addSeparator();
@@ -1031,7 +1032,7 @@ void MainWindow::buildMenuBar()
     QMenu *formatMenu = this->menuBar()->addMenu(tr("For&mat"));
     formatMenu->addAction(createWidgetAction(tr("&Bold"), editor, SLOT(bold()), QKeySequence::Bold));
     formatMenu->addAction(createWidgetAction(tr("&Italic"), editor, SLOT(italic()), QKeySequence::Italic));
-    formatMenu->addAction(createWidgetAction(tr("Stri&kethrough"), editor, SLOT(strikethrough()), QKeySequence("Ctrl+K")));
+            formatMenu->addAction(createWidgetAction(tr("Stri&kethrough"), editor, SLOT(strikethrough()), QKeySequence("Ctrl+\\")));
     formatMenu->addAction(createWidgetAction(tr("&HTML Comment"), editor, SLOT(insertComment()), QKeySequence("Ctrl+/")));
     formatMenu->addSeparator();
 
@@ -1041,14 +1042,10 @@ void MainWindow::buildMenuBar()
     formatMenu->addAction(createWidgetAction(tr("Block &Quote"), editor, SLOT(createBlockquote()), QKeySequence("Ctrl+.")));
     formatMenu->addAction(createWidgetAction(tr("&Strip Block Quote"), editor, SLOT(removeBlockquote()), QKeySequence("Ctrl+,")));
     formatMenu->addSeparator();
-    formatMenu->addAction(createWidgetAction(tr("&* Bullet List"), editor, SLOT(createBulletListWithAsteriskMarker()), QKeySequence("Ctrl+8")));
-    formatMenu->addAction(createWidgetAction(tr("&- Bullet List"), editor, SLOT(createBulletListWithMinusMarker()), QKeySequence("Ctrl+Shift+-")));
-    formatMenu->addAction(createWidgetAction(tr("&+ Bullet List"), editor, SLOT(createBulletListWithPlusMarker()), QKeySequence("Ctrl+Shift+=")));
+    formatMenu->addAction(createWidgetAction(tr("&- Bullet List"), editor, SLOT(toggleBulletListWithMinusMarker()), QKeySequence("Ctrl+Return")));
+    formatMenu->addAction(createWidgetAction(tr("1&. Numbered List"), editor, SLOT(toggleNumberedListWithPeriodMarker()), QKeySequence("Ctrl+1")));
     formatMenu->addSeparator();
-    formatMenu->addAction(createWidgetAction(tr("1&. Numbered List"), editor, SLOT(createNumberedListWithPeriodMarker()), QKeySequence("Ctrl+1")));
-    formatMenu->addAction(createWidgetAction(tr("1&) Numbered List"), editor, SLOT(createNumberedListWithParenthesisMarker()), QKeySequence("Ctrl+0")));
-    formatMenu->addSeparator();
-    formatMenu->addAction(createWidgetAction(tr("&Task List"), editor, SLOT(createTaskList()), QKeySequence("Ctrl+T")));
+    formatMenu->addAction(createWidgetAction(tr("&Task List"), editor, SLOT(toggleTaskList()), QKeySequence("Ctrl+T")));
     formatMenu->addAction(createWidgetAction(tr("Toggle Task(s) &Complete"), editor, SLOT(toggleTaskComplete()), QKeySequence("Ctrl+D")));
 
 
@@ -1062,7 +1059,7 @@ void MainWindow::buildMenuBar()
     connect(fullScreenMenuAction, SIGNAL(toggled(bool)), this, SLOT(toggleFullScreen(bool)));
     viewMenu->addAction(fullScreenMenuAction);
     
-    htmlPreviewMenuAction = createWindowAction(tr("&Preview in HTML"), this, SLOT(toggleHtmlPreview(bool)), QKeySequence("CTRL+P"));
+    htmlPreviewMenuAction = createWindowAction(tr("&Preview in HTML"), this, SLOT(toggleHtmlPreview(bool)), QKeySequence("CTRL+E"));
     htmlPreviewMenuAction->setCheckable(true);
     htmlPreviewMenuAction->setChecked(appSettings->htmlPreviewVisible());
     viewMenu->addAction(htmlPreviewMenuAction);
@@ -1109,7 +1106,8 @@ void MainWindow::buildMenuBar()
     this->addAction(showSidebarTabAction);
     
     viewMenu->addSeparator();
-    viewMenu->addAction(createWidgetAction(tr("Increase Font Size"), editor, SLOT(increaseFontSize()), QKeySequence("CTRL+=")));
+    createWidgetAction(tr("Increase Font Size"), editor, SLOT(increaseFontSize()), QKeySequence("CTRL+="));
+    viewMenu->addAction(createWidgetAction(tr("Increase Font Size"), editor, SLOT(increaseFontSize()), QKeySequence("CTRL++")));
     viewMenu->addAction(createWidgetAction(tr("Decrease Font Size"), editor, SLOT(decreaseFontSize()), QKeySequence("CTRL+-")));
 
     QMenu *settingsMenu = this->menuBar()->addMenu(tr("&Settings"));
