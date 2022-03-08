@@ -126,6 +126,7 @@ HEADERS += \
     src/sidebar.h \
     src/simplefontdialog.h \
     src/statisticsindicator.h \
+    src/dictionaryindicator.h \
     src/stringobserver.h \
     src/stylesheetbuilder.h \
     src/textblockdata.h \
@@ -177,6 +178,7 @@ SOURCES += \
     src/sidebar.cpp \
     src/simplefontdialog.cpp \
     src/statisticsindicator.cpp \
+    src/dictionaryindicator.cpp \
     src/stringobserver.cpp \
     src/stylesheetbuilder.cpp \
     src/theme.cpp \

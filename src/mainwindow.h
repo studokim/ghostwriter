@@ -39,6 +39,7 @@
 #include "sessionstatisticswidget.h"
 #include "sidebar.h"
 #include "statisticsindicator.h"
+#include "dictionaryindicator.h"
 #include "theme.h"
 #include "themerepository.h"
 #include "timelabel.h"
@@ -112,6 +113,7 @@ private:
     Sidebar *sidebar;
     QPushButton *sidebarToggleButton;
     StatisticsIndicator *statisticsIndicator;
+    DictionaryIndicator *dictionaryIndicator;
     QLabel *statusIndicator;
     TimeLabel *timeIndicator;
     QPushButton *toggleSidebarButton;

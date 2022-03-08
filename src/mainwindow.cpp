@@ -780,6 +780,7 @@ void MainWindow::onOperationStarted(const QString &description)
     }
 
     statisticsIndicator->hide();
+    dictionaryIndicator->hide();
     statusIndicator->show();
     this->update();
     qApp->processEvents();
@@ -789,6 +790,7 @@ void MainWindow::onOperationFinished()
 {
     statusIndicator->setText(QString());
     statisticsIndicator->show();
+    dictionaryIndicator->show();
     statusIndicator->hide();
     this->update();
     qApp->processEvents();
@@ -1197,6 +1199,7 @@ void MainWindow::buildStatusBar()
     statusIndicator->hide();
 
     statisticsIndicator = new StatisticsIndicator(this->documentStats, this->sessionStats, this);
+    dictionaryIndicator = new DictionaryIndicator(this);
 
     if ((appSettings->favoriteStatistic() >= 0)
             && (appSettings->favoriteStatistic() < statisticsIndicator->count())) {
@@ -1212,9 +1215,11 @@ void MainWindow::buildStatusBar()
         &AppSettings::setFavoriteStatistic);
 
     midLayout->addWidget(statisticsIndicator, 0, Qt::AlignCenter);
+    midLayout->addWidget(dictionaryIndicator, 0, Qt::AlignCenter);
     midWidget->setContentsMargins(0, 0, 0, 0);
     statusBarLayout->addWidget(midWidget, 1, 1, 1, 1, Qt::AlignCenter);
     statusBarWidgets.append(statisticsIndicator);
+    statusBarWidgets.append(dictionaryIndicator);
 
     // Add right-most widgets to status bar.
     QPushButton *button = new QPushButton(QChar(fa::moon));
