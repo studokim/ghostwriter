@@ -56,9 +56,10 @@
     position: fixed;
     overflow-x: scroll;
     overflow-y: scroll;
-    width: -webkit-calc(100% - 16px);
+    max-width: 40em;
+    width: 100%;
     height: inherit;
-    left: 0px;
+    left: max(0em, (100% - 40em) / 2);
     top: 8px;
     bottom: 0px;
     background: $backgroundColor;
