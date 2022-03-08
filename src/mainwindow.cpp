@@ -142,7 +142,7 @@ MainWindow::MainWindow(const QString &filePath, QWidget *parent)
     editor->setAutoMatchEnabled('`', appSettings->autoMatchCharEnabled('`'));
     editor->setAutoMatchEnabled('<', appSettings->autoMatchCharEnabled('<'));
 
-    QWidget *editorPane = new QWidget(this);
+    editorPane = new QWidget(this);
     editorPane->setObjectName("editorLayoutArea");
     editorPane->setLayout(editor->preferredLayout());
 
@@ -367,6 +367,7 @@ MainWindow::MainWindow(const QString &filePath, QWidget *parent)
     //
     applyTheme();
     adjustEditorWidth(this->width(), true);
+    toggleHtmlPreview(appSettings->htmlPreviewVisible());
 
     this->update();
     qApp->processEvents();
@@ -528,7 +529,12 @@ void MainWindow::toggleHtmlPreview(bool checked)
     htmlPreviewMenuAction->blockSignals(true);
 
     htmlPreviewMenuAction->setChecked(checked);
+    editorPane->setVisible(!checked);
     htmlPreview->setVisible(checked);
+    if (checked)
+        htmlPreview->setFocus();
+    else
+        editor->setFocus();
     htmlPreview->updatePreview();
     adjustEditorWidth(this->width());
 
@@ -925,7 +931,10 @@ void MainWindow::onSidebarVisibilityChanged(bool visible)
     }
 
     if (!visible) {
-        editor->setFocus();
+        if (htmlPreview->isVisible())
+            htmlPreview->setFocus();
+        else
+            editor->setFocus();
     }
 }
 

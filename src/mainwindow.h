@@ -124,6 +124,7 @@ private:
     QPushButton *focusModeButton;
     QPushButton *htmlPreviewButton;
     HtmlPreview *htmlPreview;
+    QWidget *editorPane;
     QAction *htmlPreviewMenuAction;
     QAction *fullScreenMenuAction;
     QPushButton *fullScreenButton;
