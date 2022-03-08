@@ -137,6 +137,9 @@ public:
     void setDictionaryLanguage(const QString &language);
     Q_SIGNAL void dictionaryLanguageChanged(const QString &language);
 
+    QStringList dictionaryFavoriteLocales() const;
+    void setDictionaryFavoriteLocales(const QStringList &languages);
+
     QString locale() const;
     void setLocale(const QString &locale);
 
